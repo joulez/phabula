@@ -1,0 +1,6 @@
+<metal:html use-macro="load: html.pt">
+<metal:fill_head metal:fill-slot="head">
+    <metal:head use-macro="load: head.pt"/>
+</metal:fill_head>
+</metal:html>
+

@@ -1,0 +1,10 @@
+<head>
+    <title>${title}</title>
+    <meta charset="${charset}"/>
+    <meta name="description" content="${description}"/>
+    <meta name="robots" content="${robots}"/>
+    <!--!>Dev<-->
+    <meta http-equiv="refresh" content="3" />
+    <metal:repeat tal:repeat="file stylesheets"><link rel="stylestheet" type="text/css" href="${file}"></metal:repeat>
+    <metal:repeat tal:repeat="file libs"><script type="text/javascript" src="${file}"></script></metal:repeat>
+</head>

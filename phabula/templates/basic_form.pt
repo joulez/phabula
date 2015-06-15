@@ -1,0 +1,172 @@
+<style>
+@font-face {
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 300;
+    src: local('Open Sans Light'), local('OpenSans-Light'),
+        url(//fonts.gstatic.com/s/opensans//v13/DXI1ORHCpsQm3Vp6mXoaTegdm0LZdjqr5-oayXSOefg.woff2) format('woff2')
+        url(//fonts.gstatic.com/s/opensans/v13/DXI1ORHCpsQm3Vp6mXoaTXhCUOGz7vYGh680lGh-uXM.woff) format('woff')
+    ;
+}
+@font-face {
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 300;
+    src: local('Open Sans Light'), local('OpenSans-Light'),
+        url(//fonts.gstatic.com/s/opensans/v13/cJZKeOuBrn4kERxqtaUH3VtXRa8TVwTICgirnJhmVJw.woff2) format('woff2'),
+        url(//fonts.gstatic.com/s/opensans/v13/cJZKeOuBrn4kERxqtaUH3T8E0i7KZn-EPnyo3HZu7kw.woff) format('woff')
+    ;
+}
+</style>
+<style>
+.form-label {
+    font-weight: bold;
+    line-height: 14px;
+}
+.ctrl-row {
+    margin: 0 0 15px;
+}
+.ctrl-con label {
+    display: block;
+    height: 13px;
+}
+.text-field {
+    font-size: 14px; 
+    width: 100%;
+    padding: 3px;
+    margin: 2px 0px 5px;
+    box-sizing: border-box;
+    border-radius: 2px;
+    background: #FFFFFF;
+    display: block;
+    border: 1px solid #dcdbe1;
+}
+
+.text-field:hover {
+    border: 1px solid #94899e;
+}
+.text-field:focus {
+    border: 1px solid #25252b;
+}
+.basic-form button[type=submit], .link-button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+    padding: 6px;
+    width: 100%;
+    z-index: 1;
+    background: #3A6EC2;
+    display: block;
+    box-sizing: border-box;
+    border: 0px;
+    border-radius: 3px;
+}
+
+.basic-form button[type=submit]:hover, .link-button:hover {
+    background: #417CDA;
+}
+
+.basic-form button[type=submit]:active, .link-button:active {
+    background-color: #3A6EC2;
+    -moz-box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    -webkit-box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    padding-top: 7px;
+    padding-bottom: 5px;
+}
+.basic-form .pop-box {
+    border: 1px solid #d2f2f2;
+    border-radius: 3px;
+    margin-bottom: 10px;
+    min-height: 32px;
+    padding: 5px;
+    position: relative;
+}
+
+.basic-form-inner {
+    padding: 5px;
+}
+
+.form-container {
+    padding: 13px 13px 26px 13px;
+}
+.basic-form-header {
+    background: transparent !important;
+    padding: 10px;
+}
+
+.basic-form-outer {
+    background: #F6FFFD;
+    border-radius: 0 0 3px 3px;
+}
+.basic-form-header h3 {
+    margin: 0;
+    padding: 0;
+    color: #FFFFFF;
+    text-shadow:1px 1px 0 #737878;
+}
+.basic-form input[type=checkbox] {
+    vertical-align: middle;
+    margin: 0px;
+}
+.basic-form label {
+    vertical-align: bottom;
+}
+
+</style>
+<div class="basic-form box-style">
+    <div class="basic-form-header">
+        <h3 class="form-title" tal:content="form.title"></h3>
+    </div>
+    <div class="basic-form-outer" id="${form.id}_con" style="width:${form.width}"> 
+    <div class="basic-form-inner">
+        <div class="form-container">
+            <div id="form_notify" tal:define="n form.notify" tal:condition="n" class="pop-box notify-box dialog">
+                <div class="ibox-32px notify-32px"></div>
+                <span tal:replace="structure: n"></span>
+                <span class="ibox-16px close-16px close-notify-16px closer"></span>
+            </div>
+            <div id="form_info" tal:condition="form.info and not form.valid == False and not form.invalid_key and not form.no_cookie" class="pop-box info-box dialog">
+               <div class="ibox-32px info-32px"></div>
+               <tal:repeat tal:repeat="item form.info"><span tal:replace="structure: item"/></tal:repeat>
+                <span class="ibox-16px close-16px close-info-16px closer"></span>
+            </div>
+            <!--!><div id="form_error" tal:condition="form.valid is False" class="pop-box error-box dialog closer">
+                <div class="ibox-32px error-32px"></div>
+                <p style="padding-top:8px;"><span>Please correct errors highlighted to continue.</span></p>
+                <span class="ibox-16px close-16px close-err-16px closer"></span>
+            </div>
+            -->
+            <form  id="${form.id}" name="${form.name}" method="${form.method}" action="${form.action}" tal:attributes="novalidate 'novalidate' if form.novalidate else None" enctype="${form.enctype}">
+                <div id="form_inner">
+                    <tal:f_loop tal:repeat="field form.get_fields(types='client')">
+                    <div tal:condition="field.type not in ('hidden', 'checkbox')" class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
+                        <!--!><div class="Contain invalid-msg" tal:condition="field.valid is False"><p><span style="text-align:right;width:8%"><span class="ibox-16px err-16px"></span></span>
+                            <span style="text-align:right;width:90%;vertical-align:middle;float:right;" tal:content="field.invalid_message"></span></p></div>-->
+                        <div class="ctrl-con">
+                            <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
+                                <span style="float:left;" tal:content="field.label"></span><span></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
+                        <tal:render tal:content="structure: field.render()"/>
+                        <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
+                        </div>
+                    </div>
+                    <tal:render tal:condition="field.type == 'hidden'" tal:content="structure: field.render()"/>
+                    <div class="ctrl-row" tal:condition="field.type == 'checkbox'">
+                        <div>
+                            ${structure: field.render()}
+                         <label for="${field.id}">Remember Me?</label>
+                        </div>
+                    </div>
+                </tal:f_loop>
+                <div id="btn_main" class="btn-con contain">
+                    <tal:b_loop tal:repeat="button form.get_buttons()" tal:content="structure: button.render()"/>
+                </div>
+                </div>
+                <script type="text/javascript" tal:condition="form.script" tal:content="structure: form.script"></script>
+                    <p style="text-align:center;margin:23px 0 2px;"><a href="">Forgot password?</a></p>
+            </form>
+        </div>
+    </div>
+    </div>
+</div>

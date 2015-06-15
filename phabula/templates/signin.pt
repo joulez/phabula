@@ -1,0 +1,87 @@
+<metal:main use-macro="load: default.pt">
+<metal:body fill-slot="body">
+<style>
+#signin_block {
+    margin: 60px auto;
+    width: 300px;
+}
+.link-button {
+    background: #8890FF;
+    display: block;
+    padding: 7px 7px;
+    text-align: center;
+    text-decoration: none;
+    color: #fff;
+    font-weight: bold;
+    border-radius: 2px;
+}
+
+.link-button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+    padding: 6px;
+    width: 100%;
+    z-index: 1;
+    background: #3A6EC2;
+    display: block;
+    box-sizing: border-box;
+    border: 0px;
+    border-radius: 3px;
+    margin: auto;
+}
+
+.link-button:hover {
+    background: #417CDA;
+}
+.link-button:active {
+    background-color: #3A6EC2;
+    -moz-box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    -webkit-box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    padding-top: 7px;
+    padding-bottom: 5px;
+}
+.box-style {
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    background: #A9A4B7;
+    border-radius: 3px;
+    -moz-box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    -webkit-box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    z-index: 1;
+}
+.info-box {
+    padding: 13px;
+    font-family: Arial, sans-serif;
+    margin: 30px auto;
+    width: 300px;
+    background: #F6FFFD;
+}
+
+</style>
+<body>
+    <metal:head use-macro="load: site_head.pt"/>
+    <metal:head use-macro="load: page_head.pt"/>
+<div tal:condition="params['url'].get('c_req') is not None" class="box-style info-box warning">
+    <h3>Cookies Required for authentication.</h3>
+    <p>Please enable cookies in your browser to continue.</p>
+    <a class="link-button" style="width: 150px;" href="${path}">Try Again!</a>
+</div>
+<div tal:condition="params['url'].get('tout') is not None" class="box-style info-box warning">
+    <h3>Sign in timeout</h3>
+    <p>Please sign in within <span tal:content="params['url']['tout'][0]"></span> seconds</p>
+    <a class="link-button" style="width: 150px;" href="${path}">Try Again!</a>
+</div>
+
+
+<div id="signin_block" tal:condition="params['url'].get('c_req') is None and params['url'].get('tout') is None">
+    <div class="form-style">
+        <metal:form use-macro="load: basic_form.pt"/>
+    </div>
+</div>
+</body>
+</metal:body>
+</metal:main>

@@ -1,0 +1,13 @@
+<metal:main use-macro="load: default.pt">
+<metal:body fill-slot="body">
+<body>
+    <metal:head use-macro="load: site_head.pt"/>
+    <metal:head use-macro="load: page_head.pt"/>
+    <div id="signin_block">
+        <div class="form-style">
+            <h3>Sign In to Phabular</h3>
+        </div>
+    </div>
+</body>
+</metal:body>
+</metal:main>
