@@ -36,23 +36,44 @@ def _register(app, router, base_path, predicates):
     """
     _signin_resource(app, router, base_path, predicates)
     _base_resource(app, router, base_path, predicates)
+    _listing_resource(app, router, base_path, predicates)
+    _item_resource(app, router, base_path, predicates)
+    _add_item_resource(app, router, base_path, predicates)
+
+def _listing_resource(app, router, base_path, predicates):
+    path = urljoin(base_path, 'list')
+    node = app.get_node(router, path, 'list')
+    app.registry.mappings.add(node, (list, predicates))
+
+def _item_resource(app, router, base_path, predicates):
+    pat = ':re:.(\d{0,10})$'
+    path = urljoin(base_path, pat)
+    node = app.get_node(router, path, node_id='item')
+    app.registry.mappings.add(node, (item, predicates))
 
 def _base_resource(app, router, base_path, predicates):
     app.registry.mappings.add(app.get_node(router, base_path, 'phab.root'),
             (root, predicates))
 
-
-
 def _signin_resource(app, router, base_path, predicates):
+    SigninForm.init()
     predicates.append(request_methods({'POST', 'GET', 'HEAD'}))
     app.registry.mappings.add(app.get_node(router, urljoin(base_path, 
-        'signin'), 'signin'), (signin, predicates))
+        'signin'), 'signin'), (SigninForm, predicates))
+
+    #app.registry.mappings.add(app.get_node(router, urljoin(base_path, 
+    #    'signin'), 'signin'), (signin, predicates))
 
     return signin
 
+def _add_item_resource(app, router, base_path, predicates):
+    predicates.append(request_methods({'POST', 'GET', 'HEAD'}))
+    app.registry.mappings.add(app.get_node(router, urljoin(base_path,
+        'add'), 'add'), (add_item, predicates))
+    return 
+
 def setup(app, path=None, host_maps=None, template_dir=None, 
         backend=None, predicates=[], lang='en-US'):
-
     template_dir = template_dir or os.path.join(_local_dir, 'templates')
     #add id session
     app.registry.sessions.add('phab.id', CookieSession)

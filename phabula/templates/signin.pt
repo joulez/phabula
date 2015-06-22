@@ -1,6 +1,11 @@
 <metal:main use-macro="load: default.pt">
 <metal:body fill-slot="body">
 <style>
+
+body {
+    margin: 0;
+    padding: 0;
+}
 #signin_block {
     margin: 60px auto;
     width: 300px;
@@ -63,8 +68,7 @@
 
 </style>
 <body>
-    <metal:head use-macro="load: site_head.pt"/>
-    <metal:head use-macro="load: page_head.pt"/>
+<metal:head use-macro="load: site_head.pt"/>
 <div tal:condition="params['url'].get('c_req') is not None" class="box-style info-box warning">
     <h3>Cookies Required for authentication.</h3>
     <p>Please enable cookies in your browser to continue.</p>
@@ -82,6 +86,7 @@
         <metal:form use-macro="load: basic_form.pt"/>
     </div>
 </div>
+<metal:head use-macro="load: site_footer.pt"/>
 </body>
 </metal:body>
 </metal:main>
