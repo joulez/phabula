@@ -39,11 +39,18 @@ def _register(app, router, base_path, predicates):
     _listing_resource(app, router, base_path, predicates)
     _item_resource(app, router, base_path, predicates)
     _add_item_resource(app, router, base_path, predicates)
+    _static_resources(app, router, base_path, predicates)
 
 def _listing_resource(app, router, base_path, predicates):
     path = urljoin(base_path, 'list')
     node = app.get_node(router, path, 'list')
     app.registry.mappings.add(node, (list, predicates))
+
+def _static_resources(app, router, base_path, predicates):
+    CKEditor.init()
+    path = urljoin(base_path, 'static/ckeditor.js')
+    node = app.get_node(router, path, 'js_editor')
+    app.registry.mappings.add(node, (CKEditor, predicates))
 
 def _item_resource(app, router, base_path, predicates):
     pat = ':re:.(\d{0,10})$'
@@ -64,12 +71,11 @@ def _signin_resource(app, router, base_path, predicates):
     #app.registry.mappings.add(app.get_node(router, urljoin(base_path, 
     #    'signin'), 'signin'), (signin, predicates))
 
-    return signin
-
 def _add_item_resource(app, router, base_path, predicates):
+    AddItem.init()
     predicates.append(request_methods({'POST', 'GET', 'HEAD'}))
     app.registry.mappings.add(app.get_node(router, urljoin(base_path,
-        'add'), 'add'), (add_item, predicates))
+        'add'), 'add'), (AddItem, predicates))
     return 
 
 def setup(app, path=None, host_maps=None, template_dir=None, 

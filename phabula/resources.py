@@ -1,3 +1,4 @@
+import os
 import io
 import time
 
@@ -24,27 +25,46 @@ from reform import (
 from .defaults import default_context
 from psyion import media
 from psyion.resources import (
-        Resource, 
+        Resource,
+        DirectoryResource,
+        IOFileResource,
         REQUIRED,
         DEFAULT
         )
 from psyion.http import headers
 
+content_type = headers.content_type
+
 text_html = media.types.text.html(charset='UTF-8')
+
+"""
+Test.
+Ultimately signed secret will come from user configuration.
+"""
 serializer = SignedSerializer('WaMj*YCrGo&lo+')
 
-
-class FormBase(Resource):
+class ReformBase(Resource):
     meta = {
             'form_factory': REQUIRED, #form factory method
             'serializer': (DEFAULT, serializer),
-            'media_type': (DEFAULT, text_html),
-            'headers': (DEFAULT, ())
+            'headers': (DEFAULT, ()),
+            'formats': (DEFAULT, {
+                    text_html,
+                    media.types.text.html,
+                    media.types.application.json,
+                    media.types.application.xml
+                    }
+                ),
+            'default_format': (DEFAULT, text_html),
             }
 
     class BASE(Resource.BASE):
-        def set_media_type(self, value):
-            self.__class__.meta['media_type'] = value
+        
+        def get_media_type(self, session):
+            return session.response.get_header(content_type)
+
+        def set_media_type(self, session, value):
+            session.response.add_header(content_type(value).header)
 
         def set_fkey(self, form, session):
             session['signin.fkey'] = form.get_field('fkey').value = random64()
@@ -67,9 +87,27 @@ class FormBase(Resource):
     
         def set_headers(self, response):
             raise NotImplementedError('Subclass to override method.')
-        
+
+        def set_format(self, context, session):
+            url_params = context['params']['url']
+            req_format = url_params.get('format')
+            if req_format is not None:
+                for mt in self.formats:
+                    if req_format[0] == mt:
+                        self.set_media_type(session, mt)
+                        return True
+                return False
+            self.set_media_type(session, self.default_format)
+
+        def invalid_format(self, context, session):
+            msg = ('Invalid format request - Valid formats: '
+                ' %r'%str(self.formats))
+            return session.response.bad_request(context, session, msg)
+
         def __call__(self, context, session):
-            self.set_media_type(context.setdefault('format', text_html))
+            if self.set_format(context, session) is False:
+                return self.invalid_format(context, session)
+
             c = default_context.copy()
             c.update(context)
             c['current_ts'] = time.time()
@@ -114,12 +152,16 @@ def signin_form(resource, context, session):
     return form
 
 
-class SigninForm(metaclass=FormBase):
+class SigninForm(metaclass=ReformBase):
 
     meta = {
             'id': 'signin',
             'label': 'Signin Form',
             'form_factory': signin_form,
+            'formats': {
+                text_html,
+                media.types.text.html
+                }
             }
 
     def set_headers(self, response):
@@ -158,7 +200,6 @@ class SigninForm(metaclass=FormBase):
         form_fkey = form.get_field('fkey').value
         
         if form_fkey != sess_fkey:
-            print('form_fkey/sess_fkey %r/%r'%(form_fkey, sess_fkey))
             return response.found(context, session, location=path)
 
         tout = self.check_timeout(context)
@@ -175,7 +216,6 @@ class SigninForm(metaclass=FormBase):
             user = form.get_field('user').value
             del s['signin.fkey']
             if form.get_field('remember').checked is False:
-                print("checked is false")
                 s['user'] = ''
                 s.save()
             else:
@@ -185,80 +225,87 @@ class SigninForm(metaclass=FormBase):
 
         return self.get(context, session)
 
+def add_item_form(context, session):
+    form = HTMLBasicForm(context['path'], 
+        title='Create New Article',
+        id='create_item', novalidate=True, 
+        enctype='application/x-www-form-urlencoded')
+    title = TextInput('title', required=True, id='title_field',
+            label='Title', maxlength=128, css_class='text-field')
+    tags =  TextArea('tags', required=True, id='tags_field',
+            label='Tags', cols=64, css_class='text-field')
+    body = TextArea('body', required=True, id='body_field',
+            label='Content', cols=64, rows=10, css_class='text-field')
+    section = SelectInput('section', id='section_field',
+            label='Section', css_class='select-field', required=True)
+    option = SelectOption('select', 'select')
+    section.add_option(option)
 
-def get_template(session, name):
-    return session.registry.resources.get('templates').get(name)
 
-@function_resource(media_type=text_html)
-def signin(context, session):
-    response = session.response
-    request = session.request
-    tmpl = session.registry.resources.get('templates').get('signin.pt')
-    c = default_context.copy()
-    c.update(context)
-    params = context['params']
-    current_ts = time.time()
-    
-    def set_fkey(form, s):
-        s['signin.fkey'] = form.get_field('fkey').value
-        s.save()
+    ts = HiddenInput('ts', required=False, id='f_ts',
+            value=serializer.dumps(str(time.time())))
+    tout = HiddenInput('tout', required=False, id='f_tout',
+            value=serializer.dumps('300'))
+    submit = Button('submit', 'action', 'add', label='Create',
+            id='submit_button')
+    fkey = HiddenInput('fkey', required=False, id='f_key', value=random64())
+    form.set_fields(title, tags, body, section, fkey, ts, tout)
+    form.set_buttons(submit)
+    return form
 
-    def check_timeout(form):
-        try:
-            ts = float(serializer.loads(form.get_field('ts').value,
-                decode=True))
-            tout = float(serializer.loads(form.get_field('tout').value,
-                decode=True))
-            if ts+tout > current_ts:
 
-                return False, int(tout)
-            return True, int(tout)
-        except:
-            return None, None
+class AddItem(metaclass=ReformBase):
+    meta = {
+            'id': 'additem',
+            'label': 'Add Item Form',
+            'form_factory': staticmethod(add_item_form),
+            'formats': {
+                text_html,
+                media.types.text.html
+                }
+            }
 
-    def set_headers(response):
+    def set_headers(self, response):
         hdrs = (headers.cache_control(['no-cache', 'no-store',
                 'must-revalidate']),
                 headers.pragma('no-cache'),
-                headers.expires(time.gmtime(0)))
+                headers.expires(time.gmtime(0)),
+                headers.content_security_policy("default-src 'self'"
+                " 'unsafe-inline'; link-src 'none'"))
         response.add_headers(hdrs)
-        CSP = headers.content_security_policy("default-src 'self'"
-                " 'unsafe-inline'; link-src 'none'")
-        response.add_header(CSP.header)
 
-    if session.request.method == 'GET':
-        tmpl = session.registry.resources.get('templates').get('signin.pt')
-        form = signin_form(c, session)
+    def get(self, context, session):
+        context['js_editor'] = context['router'].get_path('js_editor')
+        tmpl = session.registry.resources.get('templates').get('add_item.pt')
         s = session.get('pha_sess')
-        c['form'] = form
+        form = context['form']
         user = s.get('user')
         if user:
             form.get_field('user').value = user
-        set_fkey(form, s)
-        set_headers(response)
-        return [tmpl(c, session).encode()]
+        self.set_fkey(form, s)
+        self.set_headers(session.response)
+        return [tmpl(context, session).encode()]
 
-    if session.request.method == 'HEAD':
-        set_headers(response)
-        return []
-
-    if session.request.method == 'POST':
-        path = request.path
+    def post(self, context, session):
+        params = context['params']
+        form = context['form']
+        path = context['path']
         s = session.get('pha_sess')
+        response = session.response
 
         if 'NEW' in s.state:
             path+='?c_req=1'
             return response.found(context, session, location=path)
 
         sess_fkey = s.get('signin.fkey')
-        form = signin_form(c, session)
         form.data = dict(params.get('body', {}))
         form_fkey = form.get_field('fkey').value
-
+        
         if form_fkey != sess_fkey:
             return response.found(context, session, location=path)
 
-        tout =  check_timeout(form)
+        tout = self.check_timeout(context)
+
         if tout[0] is True:
             path += '?tout={}'.format(tout[1])
             return response.found(context, session, location=path)
@@ -271,7 +318,6 @@ def signin(context, session):
             user = form.get_field('user').value
             del s['signin.fkey']
             if form.get_field('remember').checked is False:
-                print("checked is false")
                 s['user'] = ''
                 s.save()
             else:
@@ -279,33 +325,24 @@ def signin(context, session):
                 s.save()
             return [b'thanks!']
 
-        form.get_field('fkey').value = random64()
-        c['form'] = form
-        set_fkey(form, s)
-        set_headers(response)
-        return [tmpl(c, session).encode()]
+        return self.get(context, session)
 
 
-def signin_form(context, session):
-    form = HTMLBasicForm(context['path'], 
-        title='Sign in to Phabular', 
-        id='sign_in', novalidate=True, 
-        enctype='application/x-www-form-urlencoded')
-    user = EmailInput('user', required=True, id='user_field',
-            label='User', maxlength=128, css_class='text-field')
-    password = PasswordInput('password', required=True, id='password_field',
-            label='Password', css_class='text-field')
-    remember = CheckBox('remember', 'yes', label='Remember me?')
-    ts = HiddenInput('ts', required=False, id='f_ts',
-            value=serializer.dumps(str(time.time())))
-    tout = HiddenInput('tout', required=False, id='f_tout',
-            value=serializer.dumps('300'))
-    submit = Button('submit', 'action', 'signin', label='Sign In',
-            id='submit_button')
-    fkey = HiddenInput('fkey', required=False, id='f_key', value=random64())
-    form.set_fields(user, password, remember, fkey, ts, tout)
-    form.set_buttons(submit)
-    return form
+class CKEditor(metaclass=IOFileResource):
+    meta = {
+            'id': 'ckeditor',
+            'label': 'CKeditor Resource',
+            'file': 'ckeditor.js',
+            'path': os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                'assets/ckeditor'),
+            'media_type': media.types.application.javascript,
+            'enable_hash': True,
+            'enable_alt': False,
+            'alt': '//cdn.ckeditor.com/4.4.7/standard/ckeditor.js'
+            }
+
+def get_template(session, name):
+    return session.registry.resources.get('templates').get(name)
 
 
 @function_resource(media_type=text_html)
@@ -332,7 +369,6 @@ def manager_home(context, session):
 
 
 def _test_list(page_no, page_size=10):
-
     L = []
     rfrom = page_no+page_size
     n = page_no
@@ -391,7 +427,6 @@ def _test_item(item_id):
 def item(context, session):
     c = default_context.copy()
     c.update(context)
-    print(c)
     def get_item_id(match):
         try:
             item_id = int(match.get('item'))
@@ -408,45 +443,6 @@ def item(context, session):
     c['item_id'] = item_id
     c['data'] = data
     tmpl = session.registry.resources.get('templates').get('item.pt')
-    return [tmpl(c, session).encode()]
-
-def add_item_form(context, session):
-    form = HTMLBasicForm(context['path'], 
-        title='Create New Article',
-        id='create_item', novalidate=True, 
-        enctype='application/x-www-form-urlencoded')
-    title = TextInput('title', required=True, id='title_field',
-            label='Title', maxlength=128, css_class='text-field')
-    tags =  TextArea('tags', required=True, id='tags_field',
-            label='Tags', cols=64)
-    body = TextArea('body', required=True, id='body_field',
-            label='Content', cols=64)
-    section = SelectInput('section', id='section_field',
-            label='Section', css_class='select-field')
-    option = SelectOption('select', 'select')
-    section.add_option(option)
-
-
-    ts = HiddenInput('ts', required=False, id='f_ts',
-            value=serializer.dumps(str(time.time())))
-    tout = HiddenInput('tout', required=False, id='f_tout',
-            value=serializer.dumps('300'))
-    submit = Button('submit', 'action', 'add', label='Create',
-            id='submit_button')
-    fkey = HiddenInput('fkey', required=False, id='f_key', value=random64())
-    form.set_fields(title, tags, body, section, fkey, ts, tout)
-    form.set_buttons(submit)
-    return form
-
-@function_resource(media_type=text_html(charset='utf-8'))
-def add_item(context, session):
-    method = context['method']
-    c = default_context.copy()
-    c.update(context)
-    form = add_item_form(context, session)
-    c['form'] = form
-    if method == 'get':
-        tmpl = get_template(session, 'add_item.pt')
     return [tmpl(c, session).encode()]
 
 # vim:set sw=4 sts=4 ts=4 et tw=79:
