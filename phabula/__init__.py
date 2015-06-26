@@ -1,16 +1,22 @@
 import os
+from stat import (
+        S_ISDIR,
+        S_ISREG,
+        ST_MODE
+        )
 from urllib.parse import urljoin
 
 from psyion.resources import (
         ChameleonTemplates,
-        ChameleonTemplate
+        ChameleonTemplate,
+        map_directory_tree
         )
 
 from psyion.media import types as media_types
 
 from psyion.predicates import request_methods
 from psyion.sessions import CookieSession
-
+from psyion.nodes import Node
 
 from reform import HTMLBasicForm
 
@@ -40,6 +46,7 @@ def _register(app, router, base_path, predicates):
     _item_resource(app, router, base_path, predicates)
     _add_item_resource(app, router, base_path, predicates)
     _static_resources(app, router, base_path, predicates)
+    _static_directory_trees(app, router, base_path, predicates)
 
 def _listing_resource(app, router, base_path, predicates):
     path = urljoin(base_path, 'list')
@@ -47,10 +54,21 @@ def _listing_resource(app, router, base_path, predicates):
     app.registry.mappings.add(node, (list, predicates))
 
 def _static_resources(app, router, base_path, predicates):
+    CKEditor.set_path(os.path.join(_local_dir, 'assets', 'javascript',
+        'ckeditor'))
     CKEditor.init()
     path = urljoin(base_path, 'static/ckeditor.js')
     node = app.get_node(router, path, 'js_editor')
     app.registry.mappings.add(node, (CKEditor, predicates))
+
+def _static_directory_trees(app, router, base_path, predicates):
+    assets_dir = os.path.join(_local_dir, 'assets')
+    js_dir = os.path.join(assets_dir, 'javascript')
+    assets_map = urljoin(base_path, 'assets')
+    path_map = urljoin(assets_map+'/', 'js')
+    base_node = app.get_node(router, path_map, 'PHAB_JS')
+    map_directory_tree(router, app.registry.mappings, base_node, js_dir, 
+            '^.*(.js|.css|.md|.png)')
 
 def _item_resource(app, router, base_path, predicates):
     pat = ':re:.(\d{0,10})$'

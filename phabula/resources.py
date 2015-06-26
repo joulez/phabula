@@ -131,7 +131,7 @@ class ReformBase(Resource):
 
 
 def signin_form(resource, context, session):
-    form = HTMLBasicForm(context['path'], 
+    form = HTMLBasicForm(context['lookup']['path'], 
         title='Sign in to Phabular', 
         id='sign_in', novalidate=True, 
         enctype='application/x-www-form-urlencoded')
@@ -187,7 +187,7 @@ class SigninForm(metaclass=ReformBase):
     def post(self, context, session):
         params = context['params']
         form = context['form']
-        path = context['path']
+        path = context['lookup']['path']
         s = session.get('pha_sess')
         response = session.response
 
@@ -226,7 +226,7 @@ class SigninForm(metaclass=ReformBase):
         return self.get(context, session)
 
 def add_item_form(context, session):
-    form = HTMLBasicForm(context['path'], 
+    form = HTMLBasicForm(context['lookup']['path'], 
         title='Create New Article',
         id='create_item', novalidate=True, 
         enctype='application/x-www-form-urlencoded')
@@ -275,7 +275,7 @@ class AddItem(metaclass=ReformBase):
         response.add_headers(hdrs)
 
     def get(self, context, session):
-        context['js_editor'] = context['router'].get_path('js_editor')
+        context['js_editor'] = '//news/assets/js/ckeditor/ckeditor.js'
         tmpl = session.registry.resources.get('templates').get('add_item.pt')
         s = session.get('pha_sess')
         form = context['form']
@@ -289,7 +289,7 @@ class AddItem(metaclass=ReformBase):
     def post(self, context, session):
         params = context['params']
         form = context['form']
-        path = context['path']
+        path = context['lookup']['path']
         s = session.get('pha_sess')
         response = session.response
 
@@ -343,6 +343,16 @@ class CKEditor(metaclass=IOFileResource):
 
 def get_template(session, name):
     return session.registry.resources.get('templates').get(name)
+
+
+
+def map_static_directory(app, base_path, dir, pattern):
+    level = 0
+    def walk(level=2):
+        pass
+
+    pass
+
 
 
 @function_resource(media_type=text_html)
