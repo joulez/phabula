@@ -12,12 +12,4 @@ Phabula
         :target: https://pypi.python.org/pypi/phabula
 
 
-Update/News (blog) extension to the psyion web framework
-
-* Free software: BSD license
-* Documentation: https://phabula.readthedocs.org.
-
-Features
---------
-
-* TODO
+Update/News (blog) extension to the Psyion HTTP framework
