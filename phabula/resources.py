@@ -269,13 +269,18 @@ class AddItem(metaclass=ReformBase):
         hdrs = (headers.cache_control(['no-cache', 'no-store',
                 'must-revalidate']),
                 headers.pragma('no-cache'),
-                headers.expires(time.gmtime(0)),
-                headers.content_security_policy("default-src 'self'"
-                " 'unsafe-inline'; link-src 'none'"))
+                headers.expires(time.gmtime(0)))
+                #headers.content_security_policy("default-src 'self'"
+                #" 'unsafe-inline'; link-src 'none'"))
         response.add_headers(hdrs)
 
     def get(self, context, session):
-        context['js_editor'] = '//news/assets/js/ckeditor/ckeditor.js'
+        router = context['router']
+        url = router.get_url('psyion.org', 'LIST.ckeditor', 'ckeditor.js',
+                port=session.request.server_port)
+        path = router.get_path('LIST.ckeditor',
+                'ckeditor.js', cache=True)
+        context['js_editor'] = url
         tmpl = session.registry.resources.get('templates').get('add_item.pt')
         s = session.get('pha_sess')
         form = context['form']
