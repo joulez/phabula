@@ -7,7 +7,7 @@ def create_backend(server, id, label, database, **kw):
         raise NotImplementedError
 
 
-def create_sqlite3_backend(id, label, database, min=None, max=None, name=None):
+def create_sqlite3_backend(id, label, database, min=None, max=None):
     """
     Backend factory for creating database pools with the sqlite3 database.
     """
