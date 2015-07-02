@@ -1,0 +1,234 @@
+<metal:main use-macro="load: default.pt">
+<metal:body fill-slot="body">
+<body>
+<style scoped="scoped">
+
+body {
+    margin: 0;
+    padding: 0;
+}
+#add_block {
+    margin: 60px auto;
+    width: 800px;
+}
+.link-button {
+    background: #8890FF;
+    display: block;
+    padding: 7px 7px;
+    text-align: center;
+    text-decoration: none;
+    color: #fff;
+    font-weight: bold;
+    border-radius: 2px;
+}
+
+.link-button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+    padding: 6px;
+    width: 100%;
+    z-index: 1;
+    background: #3A6EC2;
+    display: block;
+    box-sizing: border-box;
+    border: 0px;
+    border-radius: 3px;
+    margin: auto;
+}
+
+.link-button:hover {
+    background: #417CDA;
+}
+.link-button:active {
+    background-color: #3A6EC2;
+    -moz-box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    -webkit-box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    padding-top: 7px;
+    padding-bottom: 5px;
+}
+.box-style {
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    background: #A9A4B7;
+    border-radius: 3px;
+    -moz-box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    -webkit-box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    z-index: 1;
+}
+.info-box {
+    padding: 13px;
+    font-family: Arial, sans-serif;
+    margin: 30px auto;
+    width: 300px;
+    background: #F6FFFD;
+}
+
+</style>
+<style>
+@font-face {
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 300;
+    src: local('Open Sans Light'), local('OpenSans-Light'),
+        url(//fonts.gstatic.com/s/opensans//v13/DXI1ORHCpsQm3Vp6mXoaTegdm0LZdjqr5-oayXSOefg.woff2) format('woff2')
+        url(//fonts.gstatic.com/s/opensans/v13/DXI1ORHCpsQm3Vp6mXoaTXhCUOGz7vYGh680lGh-uXM.woff) format('woff')
+    ;
+}
+@font-face {
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 300;
+    src: local('Open Sans Light'), local('OpenSans-Light'),
+        url(//fonts.gstatic.com/s/opensans/v13/cJZKeOuBrn4kERxqtaUH3VtXRa8TVwTICgirnJhmVJw.woff2) format('woff2'),
+        url(//fonts.gstatic.com/s/opensans/v13/cJZKeOuBrn4kERxqtaUH3T8E0i7KZn-EPnyo3HZu7kw.woff) format('woff')
+    ;
+}
+</style>
+<style>
+.form-label {
+    font-weight: bold;
+    line-height: 14px;
+}
+.ctrl-row {
+    margin: 0 0 15px;
+}
+.ctrl-con label {
+    display: block;
+    height: 13px;
+}
+.text-field {
+    font-size: 14px; 
+    width: 100%;
+    padding: 3px;
+    margin: 2px 0px 5px;
+    box-sizing: border-box;
+    border-radius: 2px;
+    background: #FFFFFF;
+    display: block;
+    border: 1px solid #dcdbe1;
+}
+
+.text-field:hover {
+    border: 1px solid #94899e;
+}
+.text-field:focus {
+    border: 1px solid #25252b;
+}
+.basic-form button[type=submit], .link-button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+    padding: 6px;
+    width: 100%;
+    z-index: 1;
+    background: #3A6EC2;
+    display: block;
+    box-sizing: border-box;
+    border: 0px;
+    border-radius: 3px;
+}
+
+.basic-form button[type=submit]:hover, .link-button:hover {
+    background: #417CDA;
+}
+
+.basic-form button[type=submit]:active, .link-button:active {
+    background-color: #3A6EC2;
+    -moz-box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    -webkit-box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    padding-top: 7px;
+    padding-bottom: 5px;
+}
+.basic-form .pop-box {
+    border: 1px solid #d2f2f2;
+    border-radius: 3px;
+    margin-bottom: 10px;
+    min-height: 32px;
+    padding: 5px;
+    position: relative;
+}
+
+.basic-form-inner {
+    padding: 5px;
+}
+
+.form-container {
+    padding: 13px 13px 26px 13px;
+}
+.basic-form-header {
+    background: transparent !important;
+    padding: 10px;
+}
+
+.basic-form-outer {
+    background: #F6FFFD;
+    border-radius: 0 0 3px 3px;
+}
+.basic-form-header h3 {
+    margin: 0;
+    padding: 0;
+    color: #FFFFFF;
+    text-shadow:1px 1px 0 #737878;
+}
+.basic-form input[type=checkbox] {
+    vertical-align: middle;
+    margin: 0px;
+}
+.basic-form label {
+    vertical-align: bottom;
+    margin-bottom: 5px;
+}
+.basic-form textarea {
+    resize: none;
+}
+</style>
+<metal:head use-macro="load: site_head.pt"/>
+<script src="${js_editor}"></script>
+<script src="${mootools}"></script>
+<div tal:condition="params['url'].get('c_req') is not None" class="box-style info-box warning">
+    <h3>Cookies Required for authentication.</h3>
+    <p>Please enable cookies in your browser to continue.</p>
+    <a class="link-button" style="width: 150px;" href="${path}">Try Again!</a>
+</div>
+<div tal:condition="params['url'].get('tout') is not None" class="box-style info-box warning">
+    <h3>Form timeout</h3>
+    <p>Please submit form within <span tal:content="params['url']['tout'][0]"></span> seconds</p>
+    <a class="link-button" style="width: 150px;" href="${path}">Try Again!</a>
+</div>
+<div id="add_block" tal:condition="params['url'].get('c_req') is None and params['url'].get('tout') is None">
+<div class="basic-form box-style">
+    <div class="basic-form-header">
+        <h3 class="form-title" tal:content="form.title"></h3>
+    </div>
+    <div class="basic-form-outer" id="${form.id}_con" style="width:${form.width}"> 
+    <div class="basic-form-inner">
+        <div class="form-container">
+            <div id="form_notify" tal:define="n form.notify" tal:condition="n" class="pop-box notify-box dialog">
+                <div class="ibox-32px notify-32px"></div>
+                <span tal:replace="structure: n"></span>
+                <span class="ibox-16px close-16px close-notify-16px closer"></span>
+            </div>
+            <div id="form_info" tal:condition="form.info and not form.valid == False and not form.invalid_key and not form.no_cookie" class="pop-box info-box dialog">
+               <div class="ibox-32px info-32px"></div>
+               <tal:repeat tal:repeat="item form.info"><span tal:replace="structure: item"/></tal:repeat>
+                <span class="ibox-16px close-16px close-info-16px closer"></span>
+            </div>
+        <metal:form use-macro="load: basic_form.pt"/>
+        <script type="text/javascript">
+        CKEDITOR.replace('body_field');
+        </script>
+        </div>
+    </div>
+    </div>
+</div>
+</div>
+<metal:head use-macro="load: site_footer.pt"/>
+</body>
+</metal:body>
+</metal:main>

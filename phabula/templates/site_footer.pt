@@ -1,0 +1,11 @@
+<style type="text/css" scoped>
+#site_head {
+    width: 100%;
+    background: #E3DCF5;
+    padding: 1px;
+    margin: 0px;
+    height: 40px;
+}
+</style>
+<div id="site_head" class="site">
+</div>

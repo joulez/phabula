@@ -1,0 +1,82 @@
+PRAGMA foreign_keys=ON;
+BEGIN TRANSACTION;
+CREATE TABLE items (
+    id integer PRIMARY KEY,
+    ts date NOT NULL DEFAULT current_date,
+    title text NOT NULL
+);
+
+CREATE INDEX item_title_idx ON items (title);
+
+CREATE TABLE permissions (
+    id integer PRIMARY KEY,
+    value text NOT NULL
+);
+
+INSERT INTO permissions (value) VALUES ('read'), ('write'), ('delete');
+
+CREATE TABLE item_creators (
+    item_id integer NOT NULL REFERENCES items(id),
+    user_id integer NOT NULL REFERENCES users(id)
+);
+
+CREATE TABLE item_perms (
+    item_id integer NOT NULL REFERENCES items(id),
+    perm_id integer NOT NULL REFERENCES permissions(id),
+    user_id integer NOT NULL REFERENCES users(id)
+);
+
+CREATE TABLE content (
+    id integer PRIMARY KEY,
+    item_id integer NOT NULL REFERENCES items(id),
+    ts date NOT NULL DEFAULT current_date,
+    data text NOT NULL
+);
+CREATE INDEX item_id_idx ON content (item_id);
+
+CREATE TABLE content_authors (
+    content_id integer NOT NULL REFERENCES content(id),
+    user_id integer NOT NULL REFERENCES users(id),
+    UNIQUE (content_id, user_id)
+);
+
+CREATE TABLE assets (
+    id integer PRIMARY KEY,
+    name text NOT NULL,
+    data bytea NOT NULL,
+    media_type text NOT NULL,
+    bsize integer NOT NULL
+);
+
+CREATE TABLE links (
+    id integer PRIMARY KEY,
+    ts date NOT NULL DEFAULT current_date,
+    data text NOT NULL
+);
+
+CREATE TABLE current_content (
+    item_id integer NOT NULL REFERENCES items (id),
+    content_id integer NOT NULL REFERENCES content (id),
+    modified date NOT NULL DEFAULT current_date
+);
+
+CREATE TABLE user_map (
+    id integer NOT NULL PRIMARY KEY,
+    map_id integer NOT NULL,
+    name text NOT NULL
+);
+INSERT INTO user_map (map_id, name) VALUES (777, 'anonymous');
+
+CREATE TABLE tags (
+    id integer NOT NULL PRIMARY KEY,
+    value text NOT NULL UNIQUE
+);
+
+CREATE TABLE item_tags (
+    item_id integer NOT NULL REFERENCES items(id),
+    tag_id integer NOT NULL REFERENCES tags(id)
+);
+CREATE INDEX item_tags_item_id_idx ON item_tags (item_id);
+CREATE INDEX item_tags_tag_id_idx ON item_tags (tag_id);
+
+COMMIT;

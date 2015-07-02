@@ -1,0 +1,190 @@
+<metal:main use-macro="load: default.pt">
+<metal:body fill-slot="body">
+<style>
+
+body {
+    margin: 0;
+    padding: 0;
+}
+#signin_block {
+    margin: 60px auto;
+    width: 300px;
+}
+.link-button {
+    background: #8890FF;
+    display: block;
+    padding: 7px 7px;
+    text-align: center;
+    text-decoration: none;
+    color: #fff;
+    font-weight: bold;
+    border-radius: 2px;
+}
+
+.link-button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+    padding: 6px;
+    width: 100%;
+    z-index: 1;
+    background: #3A6EC2;
+    display: block;
+    box-sizing: border-box;
+    border: 0px;
+    border-radius: 3px;
+    margin: auto;
+}
+
+.link-button:hover {
+    background: #417CDA;
+}
+.link-button:active {
+    background-color: #3A6EC2;
+    -moz-box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    -webkit-box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    padding-top: 7px;
+    padding-bottom: 5px;
+}
+.box-style {
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    background: #A9A4B7;
+    border-radius: 3px;
+    -moz-box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    -webkit-box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    z-index: 1;
+}
+.info-box {
+    padding: 13px;
+    font-family: Arial, sans-serif;
+    margin: 30px auto;
+    width: 300px;
+    background: #F6FFFD;
+}
+.table-style {
+    width: 100%;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    border-collapse: collapse;
+}
+.table-style tr {
+    border-width: 1px 0px;
+    border-style: solid;
+    border-color: #A9A4B7;
+} 
+
+.table-style .tbody-row:hover {
+    background: #F1FFE6;
+}
+.table-style td, .table-style th {
+    padding: 8px;
+}
+.table-style th {
+    background: #A9A4B7;
+    text-align: left;
+}
+.table-style tbody {
+    background: #FFF;
+}
+.h3-style {
+    margin: 0px;
+    padding: 0px;
+    color: #F2F2F2;
+    text-shadow: 0px -1px 0px #737878;
+    font-weight: bold;
+    font-size: 14px;
+}
+                
+
+.list-box {
+    padding: 0;
+    margin: 30px auto;
+    width: 600px;
+}
+.list-box-con {
+    padding: 0;
+    margin: 0;
+}
+.list-box-con {
+    padding: 3px;
+    border-radius: 2px;
+    background: #A9A4B7;
+}
+.tfoot-row td {
+    padding: 0px;
+    margin: 0px;
+}
+.tfoot-row .footer-con {
+    padding: 3px 0px 0px;
+    height: 30px;
+}
+.footer-con .pager {
+    height: 100%;
+    background: #f2f2f2;
+    position: relative;
+}
+.pager .nav {
+    height: 100%;
+    width: 30px;
+    background: #d3d3d3;
+    display: inline-block;
+    position: relative;
+}
+.pager .prev {
+    float: left;
+}
+
+.pager .nav a {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.pager .next {
+    float: right;
+}
+</style>
+<body>
+<metal:head use-macro="load: site_head.pt"/>
+<metal:head use-macro="load: page_head.pt"/>
+<div class="list-box">
+    <div class="list-box-con">
+    <table class="table-style">
+        <thead>
+            <th class="thead-style" tal:repeat="head headers"><h3 class="h3-style" tal:content="head"></h3></th>
+        </thead>
+        <tbody>
+            <tr id="item_${row[0][1]}" class="tbody-row item-row" tal:repeat="row list">
+                <td class="tbody-data" tal:repeat="col row" tal:content="col[1]"></td>
+                <td class="row-action"><a href="${router.get_path('view_item', str(row[0][1]))}">Show</a></td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr class="tfoot-row">
+                <td colspan="8">
+                    <div class="footer-con">
+                        <div class="pager">
+                            <div class="nav prev">
+                                <a href="${lookup['path']}?page=${prev_page}" tal:condition="page_no > 0"><<</a>
+                            </div>
+                            <div class="nav page-list">
+                            </div>
+                            <div class="nav next">
+                                <a href="${lookup['path']}?page=${next_page}" tal:condition="next_page < page_count">>></a>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+    </div>
+</div>
+<metal:head use-macro="load: site_footer.pt"/>
+</body>
+</metal:body>
+</metal:main>
