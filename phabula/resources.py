@@ -32,6 +32,12 @@ from psyion.resources import (
         DEFAULT
         )
 from psyion.http import headers
+from psyion.utils import logging
+
+log = logging.getLogger(__name__)
+
+from .database.backends import create_backend
+from .database import queries
 
 content_type = headers.content_type
 
@@ -67,7 +73,7 @@ class ReformBase(Resource):
             session.response.add_header(content_type(value).header)
 
         def set_fkey(self, form, session):
-            session['signin.fkey'] = form.get_field('fkey').value = random64()
+            session['form.key'] = form.get_field('fkey').value = random64()
             session.save()
 
         def check_timeout(self, context):
@@ -195,7 +201,7 @@ class SigninForm(metaclass=ReformBase):
             path+='?c_req=1'
             return response.found(context, session, location=path)
 
-        sess_fkey = s.get('signin.fkey')
+        sess_fkey = s.get('form.key')
         form.data = dict(params.get('body', {}))
         form_fkey = form.get_field('fkey').value
         
@@ -214,7 +220,7 @@ class SigninForm(metaclass=ReformBase):
         if form.validate():
             password = form.get_field('password').value
             user = form.get_field('user').value
-            del s['signin.fkey']
+            del s['form.key']
             if form.get_field('remember').checked is False:
                 s['user'] = ''
                 s.save()
@@ -233,11 +239,12 @@ def add_item_form(context, session):
     title = TextInput('title', required=True, id='title_field',
             label='Title', maxlength=128, css_class='text-field')
     tags =  TextArea('tags', required=True, id='tags_field',
-            label='Tags', cols=64, css_class='text-field')
+            label='Tags', cols=64, css_class='text-field', wrap='hard')
     body = TextArea('body', required=True, id='body_field',
-            label='Content', cols=64, rows=10, css_class='text-field')
+            label='Content', cols=64, rows=10, css_class='text-field', 
+            wrap='hard', maxlength=4096)
     section = SelectInput('section', id='section_field',
-            label='Section', css_class='select-field', required=True)
+            label='Section', css_class='text-field select-field', required=True)
     option = SelectOption('select', 'select')
     section.add_option(option)
 
@@ -245,11 +252,11 @@ def add_item_form(context, session):
     ts = HiddenInput('ts', required=False, id='f_ts',
             value=serializer.dumps(str(time.time())))
     tout = HiddenInput('tout', required=False, id='f_tout',
-            value=serializer.dumps('300'))
+            value=serializer.dumps('8000'))
     submit = Button('submit', 'action', 'add', label='Create',
             id='submit_button')
     fkey = HiddenInput('fkey', required=False, id='f_key', value=random64())
-    form.set_fields(title, tags, body, section, fkey, ts, tout)
+    form.set_fields(title, tags, section, body, fkey, ts, tout)
     form.set_buttons(submit)
     return form
 
@@ -280,7 +287,8 @@ class AddItem(metaclass=ReformBase):
                 port=session.request.server_port)
         path = router.get_path('LIST.ckeditor',
                 'ckeditor.js', cache=True)
-        context['js_editor'] = url
+        context['js_editor'] = path
+        context['mootools'] = router.get_path('mootools')
         tmpl = session.registry.resources.get('templates').get('add_item.pt')
         s = session.get('pha_sess')
         form = context['form']
@@ -302,7 +310,7 @@ class AddItem(metaclass=ReformBase):
             path+='?c_req=1'
             return response.found(context, session, location=path)
 
-        sess_fkey = s.get('signin.fkey')
+        sess_fkey = s.get('form.key')
         form.data = dict(params.get('body', {}))
         form_fkey = form.get_field('fkey').value
         
@@ -321,7 +329,7 @@ class AddItem(metaclass=ReformBase):
         if form.validate():
             password = form.get_field('password').value
             user = form.get_field('user').value
-            del s['signin.fkey']
+            del s['form.key']
             if form.get_field('remember').checked is False:
                 s['user'] = ''
                 s.save()
@@ -333,17 +341,19 @@ class AddItem(metaclass=ReformBase):
         return self.get(context, session)
 
 
-class CKEditor(metaclass=IOFileResource):
+class Mootools(metaclass=IOFileResource):
     meta = {
-            'id': 'ckeditor',
-            'label': 'CKeditor Resource',
-            'file': 'ckeditor.js',
+            'id': 'mootools',
+            'label': 'Mootooles Library version 1.5.1',
+            'file': 'MooTools-Core-1.5.1.js',
             'path': os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                'assets/ckeditor'),
+                'assets/javascript'),
             'media_type': media.types.application.javascript,
             'enable_hash': True,
             'enable_alt': False,
-            'alt': '//cdn.ckeditor.com/4.4.7/standard/ckeditor.js'
+            'enable_cache': True,
+            'alt':
+            'https://cdnjs.cloudflare.com/ajax/libs/mootools/1.5.1/mootools-core-full-compat.js'
             }
 
 def get_template(session, name):
@@ -407,7 +417,7 @@ def _test_list_head():
 def list(context, session):
     c = default_context.copy()
     c.update(context)
-    path = c['path']
+    path = c['lookup']['path']
     try:
         page_no = int(c['params']['url']['page'][0])
     except:
@@ -438,26 +448,76 @@ def _test_item(item_id):
             }
     return data
 
-@function_resource(media_type=text_html(charset='utf-8'))
-def item(context, session):
-    c = default_context.copy()
-    c.update(context)
-    def get_item_id(match):
-        try:
-            item_id = int(match.get('item'))
-            return item_id
-        except:
-            return None
-    item_id = get_item_id(context.get('match'))
-    if not item_id:
-        return session.response.not_found(context, session)
+def listitems(backend):
+    class ListItems(metaclass=backend):
+        meta = {
+                'id': 'list_items',
+                'label': 'Article List'}
 
-    path = c['path']
-    data = _test_item(item_id)
-    c['title'] = data['title']
-    c['item_id'] = item_id
-    c['data'] = data
-    tmpl = session.registry.resources.get('templates').get('item.pt')
-    return [tmpl(c, session).encode()]
+        def get_list(self):
+            with self.get_conn() as conn:
+                cursor = conn.cursor()
+                cursor.execute(queries.view_list)
+                v = cursor.fetchall()
+            return v
+
+        def get_item(self, item_id):
+            with self.get_conn() as conn:
+                cursor = conn.cursor()
+                cursor.execute(queries.VIEW_ITEM)
+                v = cursor.fetchone()
+            return v
+
+        def __call__(self, context, session):
+            if context['lookup']['node_id'] != 'view_list':
+                return ['foo!'.encode()]
+            with self.get_conn() as conn:
+                session.log.error('connection pool size {}'.format(len(self._pool)))
+
+            list = self.get_list()
+            c = default_context.copy()
+            conn = self.get_conn()
+            self.put_conn(conn)
+            c.update(context)
+            path = c['lookup']['path']
+            try:
+                page_no = int(c['params']['url']['page'][0])
+            except:
+                page_no = 0
+            page_count = 10
+            c['list'] = _test_list(page_no)
+            c['title'] = 'Article Summary List'
+            c['headers'] = _test_list_head()
+            c['next_page'] = page_no+1 if page_no < page_count else 0
+            c['prev_page'] = page_no-1 if page_no > 0 else page_no
+            c['page_no'] = page_no
+            c['page_count'] = page_count
+            c['show_item_href'] = context['router'].get_path('view_item')
+            tmpl = session.registry.resources.get('templates').get('list.pt')
+            return [tmpl(c, session).encode()]
+    return ListItems
+
+
+#@function_resource(media_type=text_html(charset='utf-8'))
+#def item(context, session):
+#    c = default_context.copy()
+#    c.update(context)
+#    def get_item_id(match):
+#        try:
+#            item_id = int(match.get('item'))
+#            return item_id
+#        except:
+#            return None
+#    item_id = get_item_id(context.get('match'))
+#    if not item_id:
+#        return session.response.not_found(context, session)
+#
+#    path = c['path']
+#    data = _test_item(item_id)
+#    c['title'] = data['title']
+#    c['item_id'] = item_id
+#    c['data'] = data
+#    tmpl = session.registry.resources.get('templates').get('item.pt')
+#    return [tmpl(c, session).encode()]
 
 # vim:set sw=4 sts=4 ts=4 et tw=79:

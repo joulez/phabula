@@ -21,6 +21,7 @@ from psyion.nodes import Node
 from reform import HTMLBasicForm
 
 from .resources import *
+from .database.backends import create_backend
 
 ROOT = '/'
 
@@ -42,33 +43,60 @@ def _register(app, router, base_path, predicates):
     """
     _signin_resource(app, router, base_path, predicates)
     _base_resource(app, router, base_path, predicates)
-    _listing_resource(app, router, base_path, predicates)
-    _item_resource(app, router, base_path, predicates)
+    #_listing_resource(app, router, base_path, predicates)
+    #_item_resource(app, router, base_path, predicates)
     _add_item_resource(app, router, base_path, predicates)
     _static_resources(app, router, base_path, predicates)
-    _static_directory_trees(app, router, base_path, predicates)
 
-def _listing_resource(app, router, base_path, predicates):
+
+def _register_db(app, router, base_path, predicates):
+    database = '/tmp/test.sqlite3'
+    dbmodifier = create_backend('sqlite3', database,
+            'dbmodifier', 'Database Modify Pool', min=3, max=4)
+    dbviewer = create_backend('sqlite3', database,
+            'dbviewier', 'Database View Pool', min=3, max=4)
     path = urljoin(base_path, 'list')
-    node = app.get_node(router, path, 'list')
-    app.registry.mappings.add(node, (list, predicates))
+    node = app.get_node(router, path, 'view_list')
+    item_resource = listitems(dbmodifier)
+    app.registry.mappings.add(node, (item_resource, predicates))
+    path = urljoin(base_path, 'item/:re:^.\d*')
+    node = app.get_node(router, path, 'view_item')
+    app.registry.mappings.add(node, (item_resource, predicates))
+
+    
+
+#def _listing_resource(app, router, base_path, predicates):
+#    path = urljoin(base_path, 'list')
+#    node = app.get_node(router, path, 'list')
+#    app.registry.mappings.add(node, (ListItems, predicates))
 
 def _static_resources(app, router, base_path, predicates):
-    CKEditor.set_path(os.path.join(_local_dir, 'assets', 'javascript',
-        'ckeditor'))
-    CKEditor.init()
-    path = urljoin(base_path, 'static/ckeditor.js')
-    node = app.get_node(router, path, 'js_editor')
-    app.registry.mappings.add(node, (CKEditor, predicates))
+    base_map = urljoin(base_path, 'assets')
+    base_dir = os.path.join(_local_dir, 'assets')
+    base_node = app.get_node(router, base_map, 'phabula_assets')
 
-def _static_directory_trees(app, router, base_path, predicates):
-    assets_dir = os.path.join(_local_dir, 'assets')
-    js_dir = os.path.join(assets_dir, 'javascript')
-    assets_map = urljoin(base_path, 'assets')
-    path_map = urljoin(assets_map+'/', 'js')
-    base_node = app.get_node(router, path_map, 'PHAB_JS')
-    map_directory_tree(router, app.registry.mappings, base_node, js_dir, 
-            '^.*(.js|.css|.md|.png)')
+    _static_directory_trees(app, router, base_dir, base_map, base_node,
+            predicates)
+
+def _static_directory_trees(app, router, base_dir, base_map, base_node, predicates):
+    mappings = app.registry.mappings
+    
+    js_dir = os.path.join(base_dir, 'javascript')
+    js_map = urljoin(base_map+'/', 'js')
+    js_node = app.get_node(router, js_map, 'javascript_libraries')
+    
+    mootools_node = app.get_node(router, js_map+'/mootools.js', 'mootools')
+    mappings.add(mootools_node, (Mootools, predicates))
+
+
+    ck_dir = os.path.join(js_dir, 'ckeditor')
+
+    map_directory_tree(router, mappings, js_node, ck_dir, 
+            '^.*(.js|.css|.md|.png)',
+            enable_cache=True,
+            enable_hash=True,
+            enable_alt=False,
+            alt='//cdn.ckeditor.com/4.4.7/standard')
 
 def _item_resource(app, router, base_path, predicates):
     pat = ':re:.(\d{0,10})$'
@@ -98,7 +126,9 @@ def _add_item_resource(app, router, base_path, predicates):
 
 def setup(app, path=None, host_maps=None, template_dir=None, 
         backend=None, predicates=[], lang='en-US'):
+
     template_dir = template_dir or os.path.join(_local_dir, 'templates')
+
     #add id session
     app.registry.sessions.add('phab.id', CookieSession)
     #add default session
@@ -107,10 +137,13 @@ def setup(app, path=None, host_maps=None, template_dir=None,
     path = path or ROOT
     base_path = path if path.endswith('/') else path+'/'
 
+
     resources = app.registry.resources
     router = app.get_router(host_maps) or app.create_router('phabula', host_maps=host_maps)
     resources.add(Templates)
+    #DBModifier.set_args(database='/tmp/test.sqlite2')
     _register(app, router, base_path, predicates)
+    _register_db(app, router, base_path, predicates)
     return app
 
 
