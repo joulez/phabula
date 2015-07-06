@@ -4,14 +4,14 @@ BEGIN TRANSACTION;
 
 CREATE TABLE app (
     id integer PRIMARY KEY,
-    ts date NOT NULL DEFAULT current_date,
+    ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     name text NOT NULL,
-    last_access NOT NULL DEFAULT current_date
+    last_access NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE items (
     id integer PRIMARY KEY,
-    ts date NOT NULL DEFAULT current_date,
+    ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     creator_id integer NOT NULL REFERENCES users(id),
     title text NOT NULL,
     status_hist_id integer NOT NULL REFERENCES status_hist(id),
@@ -45,7 +45,7 @@ CREATE TABLE access_list (
 
 CREATE TABLE item_access_log (
     id integer PRIMARY KEY,
-    ts date NOT NULL DEFAULT current_date,
+    ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     item_id integer NOT NULL REFERENCES items,
     access_list_id integer NOT NULL REFERENCES access_list
 );
@@ -58,7 +58,7 @@ INSERT INTO status_attrs(value) VALUES ('created'), ('posted'), ('unposted'),('d
 
 CREATE TABLE status_hist (
     id integer PRIMARY KEY,
-    ts date NOT NULL DEFAULT current_date,
+    ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     item_id integer NOT NULL REFERENCES items(id),
     status_id integer NOT NULL REFERENCES status_attrs(id)
 );
@@ -88,7 +88,7 @@ CREATE INDEX item_perms_item_id_idx ON item_perms(item_id);
 CREATE TABLE content (
     id integer PRIMARY KEY,
     item_id integer NOT NULL REFERENCES items(id),
-    ts date NOT NULL DEFAULT current_date,
+    ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     data text NOT NULL,
     hash text NOT NULL
 );
@@ -96,7 +96,7 @@ CREATE INDEX item_id_idx ON content (item_id);
 
 CREATE TABLE content_hist (
     id integer PRIMARY KEY,
-    ts date NOT NULL DEFAULT current_date,
+    ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     item_id integer NOT NULL REFERENCES items(id),
     content_id integer NOT NULL REFERENCES content(id)
 );
@@ -117,7 +117,7 @@ CREATE TABLE assets (
 
 CREATE TABLE links (
     id integer PRIMARY KEY,
-    ts date NOT NULL DEFAULT current_date,
+    ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     data text NOT NULL
 );
 

@@ -152,12 +152,12 @@ def setup_db(app, config):
                 cursor = conn.cursor()
                 cursor.executescript(f.read())
                 cursor.execute('INSERT INTO app (name) VALUES'
-                        ' (?)',('app',))
+                        ' (?)',(app.name,))
                 conn.commit()
     else:
         with sqlite3.connect(database) as conn:
             cursor = conn.cursor()
-            cursor.execute('UPDATE app SET last_access = current_date;')
+            cursor.execute('UPDATE app SET last_access = current_timestamp')
             conn.commit()
 
 
@@ -181,6 +181,7 @@ def setup(app, path=None, host_maps=None, template_dir=None,
             'Database Modify Pool', 
             database=database, 
             min=3, max=4)
+
     dbviewer = create_backend('sqlite3', 'dbviewier', 
             'Database View Pool', 
             database=database,
