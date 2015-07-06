@@ -168,6 +168,7 @@ def setup_sessions(app, config):
 
 def setup(app, path=None, host_maps=None, template_dir=None, 
         backend=None, lang='en-US', **config):
+    secret = config.get('secret', '')
 
     template_dir = template_dir or os.path.join(local_dir, 'templates')
 
@@ -185,7 +186,7 @@ def setup(app, path=None, host_maps=None, template_dir=None,
             database=database,
             min=3, max=4)
 
-    serializer = SignedSerializer('WaMj*YCrGo&lo+')
+    serializer = SignedSerializer(secret)
 
     formbase = create_formbase(dbmodifier, serializer)
 
