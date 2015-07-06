@@ -135,18 +135,20 @@ def reg_add_item(app, router, base_path, formbase, serializer, **config):
             (resource, predicates))
 
 
-
 def setup_db(app, config):
     predicates = config.get('predicates', [])
     database = config.get('database')
+
     if not os.path.exists(database):
+        app.log.warning('No database found. Generating database file.'
+                ' %r'%database)
+
         basedir = os.path.dirname(database)
         if not os.path.exists(basedir):
             os.makedirs(basedir)
 
-    if not os.path.exists(database):
-        print('No database found. Generating database file.')
         DDL = os.path.join(local_dir, 'database', 'DDL.sql')
+
         with open(DDL, 'r') as f:
             with sqlite3.connect(database) as conn:
                 cursor = conn.cursor()
