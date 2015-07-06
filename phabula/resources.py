@@ -47,96 +47,100 @@ text_html = media.types.text.html(charset='UTF-8')
 Test.
 Ultimately signed secret will come from user configuration.
 """
-serializer = SignedSerializer('WaMj*YCrGo&lo+')
 
-class ReformBase(Resource):
-    meta = {
-            'form_factory': REQUIRED, #form factory method
-            'serializer': (DEFAULT, serializer),
-            'headers': (DEFAULT, ()),
-            'formats': (DEFAULT, {
-                    text_html,
-                    media.types.text.html,
-                    media.types.application.json,
-                    media.types.application.xml
-                    }
-                ),
-            'default_format': (DEFAULT, text_html),
-            }
+def create_formbase(backend, serializer):
 
-    class BASE(Resource.BASE):
-        
-        def get_media_type(self, session):
-            return session.response.get_header(content_type)
-
-        def set_media_type(self, session, value):
-            session.response.add_header(content_type(value).header)
-
-        def set_fkey(self, form, session):
-            session['form.key'] = form.get_field('fkey').value = random64()
-            session.save()
-
-        def check_timeout(self, context):
-            form = context['form']
-            serializer = self.serializer
-            try:
-                ts = float(serializer.loads(form.get_field('ts').value,
-                    decode=True))
-                tout = float(serializer.loads(form.get_field('tout').value,
-                    decode=True))
-                if ts+tout > context['current_ts']:
-
-                    return False, int(tout)
-                return True, int(tout)
-            except:
-                return None, None
+    class ReformBase(backend):
+        meta = {
+                'form_factory': REQUIRED, #form factory method
+                'serializer': (DEFAULT, serializer),
+                'headers': (DEFAULT, ()),
+                'formats': (DEFAULT, {
+                        text_html,
+                        media.types.text.html,
+                        media.types.application.json,
+                        media.types.application.xml
+                        }
+                    ),
+                'default_format': (DEFAULT, text_html),
+                }
     
-        def set_headers(self, response):
-            raise NotImplementedError('Subclass to override method.')
-
-        def set_format(self, context, session):
-            url_params = context['params']['url']
-            req_format = url_params.get('format')
-            if req_format is not None:
-                for mt in self.formats:
-                    if req_format[0] == mt:
-                        self.set_media_type(session, mt)
-                        return True
-                return False
-            self.set_media_type(session, self.default_format)
-
-        def invalid_format(self, context, session):
-            msg = ('Invalid format request - Valid formats: '
-                ' %r'%str(self.formats))
-            return session.response.bad_request(context, session, msg)
-
-        def __call__(self, context, session):
-            if self.set_format(context, session) is False:
-                return self.invalid_format(context, session)
-
-            c = default_context.copy()
-            c.update(context)
-            c['current_ts'] = time.time()
+        class BASE(backend.BASE):
             
-            if c['method'] == 'head':
-                self.set_headers(session.response)
-                return []
+            def get_media_type(self, session):
+                return session.response.get_header(content_type)
+    
+            def set_media_type(self, session, value):
+                session.response.add_header(content_type(value).header)
+    
+            def set_fkey(self, form, session):
+                session['form.key'] = form.get_field('fkey').value = random64()
+                session.save()
+    
+            def check_timeout(self, context):
+                form = context['form']
+                serializer = self.serializer
+                try:
+                    ts = float(serializer.loads(form.get_field('ts').value,
+                        decode=True))
+                    tout = float(serializer.loads(form.get_field('tout').value,
+                        decode=True))
+                    if ts+tout > context['current_ts']:
+    
+                        return False, int(tout)
+                    return True, int(tout)
+                except:
+                    return None, None
+        
+            def set_headers(self, response):
+                raise NotImplementedError('Subclass to override method.')
+    
+            def set_format(self, context, session):
+                url_params = context['params']['url']
+                req_format = url_params.get('format')
+                if req_format is not None:
+                    for mt in self.formats:
+                        if req_format[0] == mt:
+                            self.set_media_type(session, mt)
+                            return True
+                    return False
+                self.set_media_type(session, self.default_format)
+    
+            def invalid_format(self, context, session):
+                msg = ('Invalid format request - Valid formats: '
+                    ' %r'%str(self.formats))
+                return session.response.bad_request(context, session, msg)
+    
+            def __call__(self, context, session):
+                if self.set_format(context, session) is False:
+                    return self.invalid_format(context, session)
+    
+                c = default_context.copy()
+                c.update(context)
+                c['current_ts'] = time.time()
+                
+                if c['method'] == 'head':
+                    self.set_headers(session.response)
+                    return []
+                else:
+                    c['form'] = self.form_factory(c, session)
+                    if c['method'] == 'post':
+                        return self.post(c, session)
+                    else:
+                        return self.get(c, session)
+    
+            def get(self, context, session):
+                raise NotImplementedError('Subclass to override method.')
+    
+            def post(self, context, session):
+                raise NotImplementedError('Subclass to override method.')
+    
+    return ReformBase
 
-            c['form'] = self.form_factory(c, session)
-
-            if c['method'] == 'get':
-                return self.get(c, session)
-            elif c['method'] == 'post':
-                return self.post(c, session)
-
-        def get(self, context, session):
-            raise NotImplementedError('Subclass to override method.')
-
-        def post(self, context, session):
-            raise NotImplementedError('Subclass to override method.')
 
 
 def signin_form(resource, context, session):
+    serializer = resource.serializer
     form = HTMLBasicForm(context['lookup']['path'], 
         title='Sign in to Phabular', 
         id='sign_in', novalidate=True, 
@@ -158,80 +162,83 @@ def signin_form(resource, context, session):
     return form
 
 
-class SigninForm(metaclass=ReformBase):
-
-    meta = {
-            'id': 'signin',
-            'label': 'Signin Form',
-            'form_factory': signin_form,
-            'formats': {
-                text_html,
-                media.types.text.html
+def signinform(formbase):
+    class SigninForm(metaclass=formbase):
+    
+        meta = {
+                'id': 'signin',
+                'label': 'Signin Form',
+                'form_factory': signin_form,
+                'formats': {
+                    text_html,
+                    media.types.text.html
+                    }
                 }
-            }
+    
+        def set_headers(self, response):
+            hdrs = (headers.cache_control(['no-cache', 'no-store',
+                    'must-revalidate']),
+                    headers.pragma('no-cache'),
+                    headers.expires(time.gmtime(0)),
+                    headers.content_security_policy("default-src 'self'"
+                    " 'unsafe-inline'; link-src 'none'"))
+            response.add_headers(hdrs)
+    
+        def get(self, context, session):
+            tmpl = session.registry.resources.get('templates').get('signin.pt')
+            s = session.get('pha_sess')
+            form = context['form']
+            user = s.get('user')
+            if user:
+                form.get_field('user').value = user
+            self.set_fkey(form, s)
+            self.set_headers(session.response)
+            return [tmpl(context, session).encode()]
+    
+        def post(self, context, session):
+            params = context['params']
+            form = context['form']
+            path = context['lookup']['path']
+            s = session.get('pha_sess')
+            response = session.response
+    
+            if 'NEW' in s.state:
+                path+='?c_req=1'
+                return response.found(context, session, location=path)
+    
+            sess_fkey = s.get('form.key')
+            form.data = dict(params.get('body', {}))
+            form_fkey = form.get_field('fkey').value
+            
+            if form_fkey != sess_fkey:
+                return response.found(context, session, location=path)
+    
+            tout = self.check_timeout(context)
+    
+            if tout[0] is True:
+                path += '?tout={}'.format(tout[1])
+                return response.found(context, session, location=path)
+    
+            if tout[0] is None:
+                return response.found(context, session, location=path)
+    
+            if form.validate():
+                password = form.get_field('password').value
+                user = form.get_field('user').value
+                del s['form.key']
+                if form.get_field('remember').checked is False:
+                    s['user'] = ''
+                    s.save()
+                else:
+                    s['user'] = user
+                    s.save()
+                return [b'thanks!']
+    
+            return self.get(context, session)
+    return SigninForm
 
-    def set_headers(self, response):
-        hdrs = (headers.cache_control(['no-cache', 'no-store',
-                'must-revalidate']),
-                headers.pragma('no-cache'),
-                headers.expires(time.gmtime(0)),
-                headers.content_security_policy("default-src 'self'"
-                " 'unsafe-inline'; link-src 'none'"))
-        response.add_headers(hdrs)
-
-    def get(self, context, session):
-        tmpl = session.registry.resources.get('templates').get('signin.pt')
-        s = session.get('pha_sess')
-        form = context['form']
-        user = s.get('user')
-        if user:
-            form.get_field('user').value = user
-        self.set_fkey(form, s)
-        self.set_headers(session.response)
-        return [tmpl(context, session).encode()]
-
-    def post(self, context, session):
-        params = context['params']
-        form = context['form']
-        path = context['lookup']['path']
-        s = session.get('pha_sess')
-        response = session.response
-
-        if 'NEW' in s.state:
-            path+='?c_req=1'
-            return response.found(context, session, location=path)
-
-        sess_fkey = s.get('form.key')
-        form.data = dict(params.get('body', {}))
-        form_fkey = form.get_field('fkey').value
-        
-        if form_fkey != sess_fkey:
-            return response.found(context, session, location=path)
-
-        tout = self.check_timeout(context)
-
-        if tout[0] is True:
-            path += '?tout={}'.format(tout[1])
-            return response.found(context, session, location=path)
-
-        if tout[0] is None:
-            return response.found(context, session, location=path)
-
-        if form.validate():
-            password = form.get_field('password').value
-            user = form.get_field('user').value
-            del s['form.key']
-            if form.get_field('remember').checked is False:
-                s['user'] = ''
-                s.save()
-            else:
-                s['user'] = user
-                s.save()
-            return [b'thanks!']
-
-        return self.get(context, session)
-
-def add_item_form(context, session):
+def add_item_form(resource, context, session):
+    serializer = resource.serializer
     form = HTMLBasicForm(context['lookup']['path'], 
         title='Create New Article',
         id='create_item', novalidate=True, 
@@ -261,84 +268,89 @@ def add_item_form(context, session):
     return form
 
 
-class AddItem(metaclass=ReformBase):
-    meta = {
-            'id': 'additem',
-            'label': 'Add Item Form',
-            'form_factory': staticmethod(add_item_form),
-            'formats': {
-                text_html,
-                media.types.text.html
+def additem(formbase, serializer):
+
+    class AddItem(metaclass=formbase):
+        meta = {
+                'id': 'additem',
+                'label': 'Add Item Form',
+                'form_factory': add_item_form,
+                'formats': {
+                    text_html,
+                    media.types.text.html
+                    },
+                'serializer': serializer
                 }
-            }
-
-    def set_headers(self, response):
-        hdrs = (headers.cache_control(['no-cache', 'no-store',
-                'must-revalidate']),
-                headers.pragma('no-cache'),
-                headers.expires(time.gmtime(0)))
-                #headers.content_security_policy("default-src 'self'"
-                #" 'unsafe-inline'; link-src 'none'"))
-        response.add_headers(hdrs)
-
-    def get(self, context, session):
-        router = context['router']
-        url = router.get_url('psyion.org', 'LIST.ckeditor', 'ckeditor.js',
-                port=session.request.server_port)
-        path = router.get_path('LIST.ckeditor',
-                'ckeditor.js', cache=True)
-        context['js_editor'] = path
-        context['mootools'] = router.get_path('mootools')
-        tmpl = session.registry.resources.get('templates').get('add_item.pt')
-        s = session.get('pha_sess')
-        form = context['form']
-        user = s.get('user')
-        if user:
-            form.get_field('user').value = user
-        self.set_fkey(form, s)
-        self.set_headers(session.response)
-        return [tmpl(context, session).encode()]
-
-    def post(self, context, session):
-        params = context['params']
-        form = context['form']
-        path = context['lookup']['path']
-        s = session.get('pha_sess')
-        response = session.response
-
-        if 'NEW' in s.state:
-            path+='?c_req=1'
-            return response.found(context, session, location=path)
-
-        sess_fkey = s.get('form.key')
-        form.data = dict(params.get('body', {}))
-        form_fkey = form.get_field('fkey').value
-        
-        if form_fkey != sess_fkey:
-            return response.found(context, session, location=path)
-
-        tout = self.check_timeout(context)
-
-        if tout[0] is True:
-            path += '?tout={}'.format(tout[1])
-            return response.found(context, session, location=path)
-
-        if tout[0] is None:
-            return response.found(context, session, location=path)
-
-        if form.validate():
-            password = form.get_field('password').value
-            user = form.get_field('user').value
-            del s['form.key']
-            if form.get_field('remember').checked is False:
-                s['user'] = ''
-                s.save()
-            else:
-                s['user'] = user
-                s.save()
-            return [b'thanks!']
-
-        return self.get(context, session)
+    
+        def set_headers(self, response):
+            hdrs = (headers.cache_control(['no-cache', 'no-store',
+                    'must-revalidate']),
+                    headers.pragma('no-cache'),
+                    headers.expires(time.gmtime(0)))
+                    #headers.content_security_policy("default-src 'self'"
+                    #" 'unsafe-inline'; link-src 'none'"))
+            response.add_headers(hdrs)
+    
+        def get(self, context, session):
+            router = context['router']
+            url = router.get_url('psyion.org', 'LIST.ckeditor', 'ckeditor.js',
+                    port=session.request.server_port)
+            path = router.get_path('LIST.ckeditor',
+                    'ckeditor.js', cache=True)
+            context['js_editor'] = path
+            context['mootools'] = router.get_path('mootools')
+            tmpl = session.registry.resources.get('templates').get('add_item.pt')
+            s = session.get('pha_sess')
+            form = context['form']
+            user = s.get('user')
+            if user:
+                form.get_field('user').value = user
+            self.set_fkey(form, s)
+            self.set_headers(session.response)
+            return [tmpl(context, session).encode()]
+    
+        def post(self, context, session):
+            params = context['params']
+            form = context['form']
+            path = context['lookup']['path']
+            s = session.get('pha_sess')
+            response = session.response
+    
+            if 'NEW' in s.state:
+                path+='?c_req=1'
+                return response.found(context, session, location=path)
+    
+            sess_fkey = s.get('form.key')
+            form.data = dict(params.get('body', {}))
+            form_fkey = form.get_field('fkey').value
+            
+            if form_fkey != sess_fkey:
+                return response.found(context, session, location=path)
+    
+            tout = self.check_timeout(context)
+    
+            if tout[0] is True:
+                path += '?tout={}'.format(tout[1])
+                return response.found(context, session, location=path)
+    
+            if tout[0] is None:
+                return response.found(context, session, location=path)
+    
+            if form.validate():
+                password = form.get_field('password').value
+                user = form.get_field('user').value
+                del s['form.key']
+                if form.get_field('remember').checked is False:
+                    s['user'] = ''
+                    s.save()
+                else:
+                    s['user'] = user
+                    s.save()
+                return [b'thanks!']
+    
+            return self.get(context, session)
+    
+    return AddItem
 
 
 class Mootools(metaclass=IOFileResource):
@@ -449,32 +461,39 @@ def _test_item(item_id):
     return data
 
 def listitems(backend):
+
+    def preload(cls):
+        with cls.get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute(queries.GET_STATUS_ATTRS)
+            cls.cache['status_attrs'] = cursor.fetchall()
+
     class ListItems(metaclass=backend):
         meta = {
                 'id': 'list_items',
-                'label': 'Article List'}
+                'label': 'Article List',
+                'cache': {}
+                }
 
         def get_list(self):
             with self.get_conn() as conn:
                 cursor = conn.cursor()
-                cursor.execute(queries.view_list)
+                cursor.execute(queries.VIEW_LIST)
                 v = cursor.fetchall()
             return v
 
         def get_item(self, item_id):
             with self.get_conn() as conn:
                 cursor = conn.cursor()
-                cursor.execute(queries.VIEW_ITEM)
+                cursor.execute(queries.VIEW_ITEM, item_id)
                 v = cursor.fetchone()
             return v
 
-        def __call__(self, context, session):
-            if context['lookup']['node_id'] != 'view_list':
-                return ['foo!'.encode()]
+        def view_list(self, context, session):
             with self.get_conn() as conn:
                 session.log.error('connection pool size {}'.format(len(self._pool)))
 
-            list = self.get_list()
+
             c = default_context.copy()
             conn = self.get_conn()
             self.put_conn(conn)
@@ -485,7 +504,8 @@ def listitems(backend):
             except:
                 page_no = 0
             page_count = 10
-            c['list'] = _test_list(page_no)
+            #c['list'] = _test_list(page_no)
+            c['list'] = self.get_list()
             c['title'] = 'Article Summary List'
             c['headers'] = _test_list_head()
             c['next_page'] = page_no+1 if page_no < page_count else 0
@@ -495,6 +515,16 @@ def listitems(backend):
             c['show_item_href'] = context['router'].get_path('view_item')
             tmpl = session.registry.resources.get('templates').get('list.pt')
             return [tmpl(c, session).encode()]
+
+
+        def __call__(self, context, session):
+            lookup = context['lookup']
+            if lookup['node_id'] == 'view_list':
+                return self.view_list(context, session)
+            elif lookup['node_id'] == 'view_item':
+                self.get_item(lookup['match'])
+                return ['foo!'.encode()]
+    preload(ListItems)
     return ListItems
 
 

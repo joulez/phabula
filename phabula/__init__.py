@@ -1,4 +1,5 @@
 import os
+import sqlite3
 from stat import (
         S_ISDIR,
         S_ISREG,
@@ -17,6 +18,7 @@ from psyion.media import types as media_types
 from psyion.predicates import request_methods
 from psyion.sessions import CookieSession
 from psyion.nodes import Node
+from psyion.utils import SignedSerializer
 
 from reform import HTMLBasicForm
 
@@ -27,43 +29,27 @@ ROOT = '/'
 
 __import__ = ('setup')
 
-_local_dir = os.path.dirname(__file__)
+local_dir = os.path.dirname(__file__)
 
 class Templates(metaclass=ChameleonTemplates):
     meta = {
-            'dir': os.path.join(_local_dir, 'templates'),
+            'dir': os.path.join(local_dir, 'templates'),
             'id': 'templates',
             'label': 'Chameleon Templates'
             }
 
 
-def _register(app, router, base_path, predicates):
+def _register(app, router, base_path, **config):
     """
     Resource and node attachments and mappings.
     """
-    _signin_resource(app, router, base_path, predicates)
+    predicates = config['predicates']
+#    _signin_resource(app, router, base_path, predicates)
     _base_resource(app, router, base_path, predicates)
     #_listing_resource(app, router, base_path, predicates)
     #_item_resource(app, router, base_path, predicates)
-    _add_item_resource(app, router, base_path, predicates)
+#    _add_item_resource(app, router, base_path, predicates)
     _static_resources(app, router, base_path, predicates)
-
-
-def _register_db(app, router, base_path, predicates):
-    database = '/tmp/test.sqlite3'
-    dbmodifier = create_backend('sqlite3', database,
-            'dbmodifier', 'Database Modify Pool', min=3, max=4)
-    dbviewer = create_backend('sqlite3', database,
-            'dbviewier', 'Database View Pool', min=3, max=4)
-    path = urljoin(base_path, 'list')
-    node = app.get_node(router, path, 'view_list')
-    item_resource = listitems(dbmodifier)
-    app.registry.mappings.add(node, (item_resource, predicates))
-    path = urljoin(base_path, 'item/:re:^.\d*')
-    node = app.get_node(router, path, 'view_item')
-    app.registry.mappings.add(node, (item_resource, predicates))
-
-    
 
 #def _listing_resource(app, router, base_path, predicates):
 #    path = urljoin(base_path, 'list')
@@ -72,7 +58,7 @@ def _register_db(app, router, base_path, predicates):
 
 def _static_resources(app, router, base_path, predicates):
     base_map = urljoin(base_path, 'assets')
-    base_dir = os.path.join(_local_dir, 'assets')
+    base_dir = os.path.join(local_dir, 'assets')
     base_node = app.get_node(router, base_map, 'phabula_assets')
 
     _static_directory_trees(app, router, base_dir, base_map, base_node,
@@ -117,33 +103,113 @@ def _signin_resource(app, router, base_path, predicates):
     #app.registry.mappings.add(app.get_node(router, urljoin(base_path, 
     #    'signin'), 'signin'), (signin, predicates))
 
-def _add_item_resource(app, router, base_path, predicates):
-    AddItem.init()
+def reg_list_items(app, router, base_path, backend, **config):
+    predicates = config['predicates']
+
+    path = urljoin(base_path, 'list')
+
+    node = app.get_node(router, path, 'view_list')
+
+    item_resource = listitems(backend)
+
+    app.registry.mappings.add(node, (item_resource, predicates))
+
+    path = urljoin(base_path, 'item/:re:^.\d*')
+
+    node = app.get_node(router, path, 'view_item')
+
+    app.registry.mappings.add(node, (item_resource, predicates))
+
+
+
+def reg_add_item(app, router, base_path, formbase, serializer, **config):
+    predicates = config.get('predicates')
+
+    path = urljoin(base_path, 'add')
+
+    resource = additem(formbase, serializer)
+
     predicates.append(request_methods({'POST', 'GET', 'HEAD'}))
-    app.registry.mappings.add(app.get_node(router, urljoin(base_path,
-        'add'), 'add'), (AddItem, predicates))
-    return 
 
-def setup(app, path=None, host_maps=None, template_dir=None, 
-        backend=None, predicates=[], lang='en-US'):
+    app.registry.mappings.add(app.get_node(router, path, 'add_item'), 
+            (resource, predicates))
 
-    template_dir = template_dir or os.path.join(_local_dir, 'templates')
 
-    #add id session
+
+def setup_db(app, config):
+    predicates = config.get('predicates', [])
+    database = config.get('database')
+    if not os.path.exists(database):
+        basedir = os.path.dirname(database)
+        if not os.path.exists(basedir):
+            os.makedirs(basedir)
+
+    if not os.path.exists(database):
+        print('No database found. Generating database file.')
+        DDL = os.path.join(local_dir, 'database', 'DDL.sql')
+        with open(DDL, 'r') as f:
+            with sqlite3.connect(database) as conn:
+                cursor = conn.cursor()
+                cursor.executescript(f.read())
+                cursor.execute('INSERT INTO app (name) VALUES'
+                        ' (?)',('app',))
+                conn.commit()
+    else:
+        with sqlite3.connect(database) as conn:
+            cursor = conn.cursor()
+            cursor.execute('UPDATE app SET last_access = current_date;')
+            conn.commit()
+
+
+def setup_sessions(app, config):
     app.registry.sessions.add('phab.id', CookieSession)
-    #add default session
     app.registry.sessions.add('pha_sess', CookieSession)
 
+
+def setup(app, path=None, host_maps=None, template_dir=None, 
+        backend=None, lang='en-US', **config):
+
+    template_dir = template_dir or os.path.join(local_dir, 'templates')
+
+    database = config['database']
+
+    setup_db(app, config)
+    setup_sessions(app, config)
+    
+    dbmodifier = create_backend('sqlite3', 'dbmodifier', 
+            'Database Modify Pool', 
+            database=database, 
+            min=3, max=4)
+    dbviewer = create_backend('sqlite3', 'dbviewier', 
+            'Database View Pool', 
+            database=database,
+            min=3, max=4)
+
+    serializer = SignedSerializer('WaMj*YCrGo&lo+')
+
+    formbase = create_formbase(dbmodifier, serializer)
+
     path = path or ROOT
+
     base_path = path if path.endswith('/') else path+'/'
 
-
     resources = app.registry.resources
-    router = app.get_router(host_maps) or app.create_router('phabula', host_maps=host_maps)
+
+    router = app.get_router(host_maps) or app.create_router('phabula',
+            host_maps=host_maps)
+
     resources.add(Templates)
-    #DBModifier.set_args(database='/tmp/test.sqlite2')
-    _register(app, router, base_path, predicates)
-    _register_db(app, router, base_path, predicates)
+
+    _register(app, router, base_path, **config)
+
+    reg_list_items(app, router, base_path, 
+            backend=dbmodifier, 
+            serializer=serializer,
+            **config)
+    reg_add_item(app, router, base_path,
+            formbase=formbase,
+            serializer=serializer, 
+            **config)
     return app
 
 

@@ -1,5 +1,6 @@
 from psyion.ext.database import SQLiteResource
 
+
 def create_backend(server, id, label, database, **kw):
     if server == 'sqlite3':
         return create_sqlite3_backend(id, label, database, **kw)
@@ -11,6 +12,7 @@ def create_sqlite3_backend(id, label, database, min=None, max=None):
     """
     Backend factory for creating database pools with the sqlite3 database.
     """
+    print('database => %s'%database)
     class DBResource(SQLiteResource):
         meta = {
                 'id': id,
@@ -20,6 +22,7 @@ def create_sqlite3_backend(id, label, database, min=None, max=None):
                 'conn_args': {'database': database},
                 'auto_initialize': True
             }
+
     return DBResource
 
 

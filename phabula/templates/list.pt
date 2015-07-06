@@ -151,9 +151,12 @@ body {
 <body>
 <metal:head use-macro="load: site_head.pt"/>
 <metal:head use-macro="load: page_head.pt"/>
-<div class="list-box">
+<div class="empty-list-box" tal:condition="not list">
+    <a href="${router.get_path('add_item')}">Create Your First Article!</a>
+</div>
+<div class="list-box" tal:condition="list">
     <div class="list-box-con">
-    <table class="table-style">
+    <table class="table-style"> 
         <thead>
             <th class="thead-style" tal:repeat="head headers"><h3 class="h3-style" tal:content="head"></h3></th>
         </thead>
