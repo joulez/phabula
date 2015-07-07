@@ -66,7 +66,18 @@ body {
     width: 300px;
     background: #F6FFFD;
 }
+.empty-box {
+    border-radius: 2px;
+    background: #F2F2F2 no-repeat;
+    border: 1px solid #D2D2D2;
+    width: 21px;
+    height: 21px;
 
+}
+.empty-box:active {
+    background: #D2D2D2;
+    background-position: 0px 1px;
+}
 </style>
 <style>
 @font-face {
@@ -98,18 +109,21 @@ body {
 }
 .ctrl-con label {
     display: block;
-    height: 13px;
 }
+
+.ctrl-con label span {
+    vertical-align: middle;
+}
+
 .text-field {
     font-size: 14px; 
-    width: 100%;
     padding: 3px;
-    margin: 2px 0px 5px;
     box-sizing: border-box;
     border-radius: 2px;
     background: #FFFFFF;
-    display: block;
+    display: inline-block;
     border: 1px solid #dcdbe1;
+    min-width: 230px;
 }
 
 .text-field:hover {
@@ -182,7 +196,7 @@ body {
 }
 .basic-form label {
     vertical-align: bottom;
-    margin-bottom: 5px;
+    padding-bottom: 5px;
 }
 .basic-form textarea {
     resize: none;
@@ -219,7 +233,122 @@ body {
                <tal:repeat tal:repeat="item form.info"><span tal:replace="structure: item"/></tal:repeat>
                 <span class="ibox-16px close-16px close-info-16px closer"></span>
             </div>
-        <metal:form use-macro="load: basic_form.pt"/>
+        <!--! Form override -->
+
+<form  id="${form.id}" name="${form.name}" method="${form.method}" action="${form.action}" tal:attributes="novalidate 'novalidate' if form.novalidate else None" enctype="${form.enctype}">
+    <div id="form_inner">
+        <div tal:define="field form.get_field('title')" class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
+            <div class="ctrl-con">
+                <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
+                    <span tal:content="field.label"></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
+            <tal:render tal:content="structure: field.render()"/>
+            <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
+            </div>
+        </div>
+        <div tal:define="field form.get_field('tags')" class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
+            <div class="ctrl-con">
+                <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
+                    <span style="padding-bottom:5px;" tal:content="field.label"></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
+                <div id="multi_tag" style="display:block;min-width:190px;" class="multi-tagger">
+                    <tal:render tal:content="structure: field.render()"/>
+                    <a style="margin-left:5px;display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'plus-21px.png')});" class="empty-box add-tag" href="#"></a><a
+                     style="display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'minus-21px.png')});" class="empty-box remove-tag" href="#"></a>
+                </div>
+            <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
+            </div>
+        </div>
+        <div tal:define="field form.get_field('section')" class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
+            <div class="ctrl-con">
+                <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
+                    <span style="padding-bottom:5px;" tal:content="field.label"></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
+                <div style="display:inline-block;min-width:190px;">
+                   <tal:render tal:content="structure: field.render()"/>
+                   <a style="margin:5px;display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'plus-21px.png')});" class="empty-box" href="#"></a>
+                </div>
+            <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
+            </div>
+        </div>
+        <div tal:define="field form.get_field('body')" class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
+            <div class="ctrl-con">
+                <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
+                    <span tal:content="field.label"></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
+            <tal:render tal:content="structure: field.render()"/>
+            <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
+            </div>
+        </div>
+        <!--!FORM FIELDS
+        <div class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
+            <div class="ctrl-con">
+                <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
+                    <span style="float:left;" tal:content="field.label"></span><span></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
+            <tal:render tal:content="structure: field.render()"/>
+            <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
+            </div>
+        </div>
+        -->
+        <tal:f_loop tal:repeat="field form.get_fields(types='hidden')" tal:content="structure: field.render()"></tal:f_loop>
+    <div id="btn_main" class="btn-con contain">
+        <tal:b_loop tal:repeat="button form.get_buttons()" tal:content="structure: button.render()"/>
+    </div>
+    </div>
+    <script type="text/javascript">
+
+    var injectAddTags = function(){
+            var multiTag = $('multi_tag');
+            var multiTagLast = $('multi_tag_last');
+            var tagClone = multiTag.clone();
+            tagClone.children[0].value = '';
+            addTagListener(tagClone.children[1]);
+            removeTagListener(tagClone.children[2]);
+            tagClone.id = multiTag.id+'_last';
+
+            if (multiTagLast){
+                multiTagLast.id = '';
+                tagClone.inject(multiTagLast, 'after');
+            } else {
+                tagClone.inject(multiTag, 'after');
+            }
+    };
+
+    var removeTag = function(){
+        var pid = this.parentNode.id;
+        var tagList = document.getElementsByClassName('multi-tagger');
+        if (pid == ''){
+            this.parentNode.remove();
+        } else if (pid == 'multi_tag_last') {
+            if (tagList.length > 2){
+                this.parentNode.previousElementSibling.id = pid;
+            }
+            this.parentNode.remove();
+        } else if (pid == 'multi_tag'){
+            if (tagList.length > 1){
+                this.parentNode.nextElementSibling.remove();
+            }
+        }
+    };
+    
+    var addTagListener = function(tag){
+        tag.addEventListener('click', injectAddTags);
+    };
+
+    var removeTagListener = function(tag){
+        tag.addEventListener('click', removeTag.bind(tag));
+    };
+    
+    var addTags = document.getElementsByClassName('add-tag');
+    var removeTags = document.getElementsByClassName('remove-tag');
+        
+    for (i = 0; i < addTags.length; i++){
+        addTagListener(addTags[i]);
+    }
+    
+    for (i=0; i < removeTags.length; i++){
+        removeTagListener(removeTags[i]);
+    }
+    
+    </script>
+</form>
+<!--! Form Override -->
         <script type="text/javascript">
         CKEDITOR.replace('body_field');
         </script>

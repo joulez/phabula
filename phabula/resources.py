@@ -244,14 +244,16 @@ def add_item_form(resource, context, session):
         id='create_item', novalidate=True, 
         enctype='application/x-www-form-urlencoded')
     title = TextInput('title', required=True, id='title_field',
-            label='Title', maxlength=128, css_class='text-field')
-    tags =  TextArea('tags', required=True, id='tags_field',
-            label='Tags', cols=64, css_class='text-field', wrap='hard')
+            label='Title', maxlength=128, css_class='text-field',
+            width='100%')
+    tags =  TextInput('tags', required=True, id='tags_field',
+            label='Tags', maxlength=128, css_class='text-field')
+    section = SelectInput('section', id='section_field',
+            label='Section', css_class='text-field select-field', 
+            required=True)
     body = TextArea('body', required=True, id='body_field',
             label='Content', cols=64, rows=10, css_class='text-field', 
             wrap='hard', maxlength=4096)
-    section = SelectInput('section', id='section_field',
-            label='Section', css_class='text-field select-field', required=True)
     option = SelectOption('select', 'select')
     section.add_option(option)
 
@@ -372,6 +374,18 @@ def get_template(session, name):
     return session.registry.resources.get('templates').get(name)
 
 
+class ImageAssets(metaclass=DirectoryResource):
+    meta = dict(
+            id='images',
+            label='Image Assets',
+            dir=os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                'assets', 'art', 'images'),
+            pattern="^.*(.png|.jpg)",
+            enable_hash=True,
+            enable_alt=False,
+            enable_cache=True
+            )
+            
 
 def map_static_directory(app, base_path, dir, pattern):
     level = 0
@@ -379,7 +393,6 @@ def map_static_directory(app, base_path, dir, pattern):
         pass
 
     pass
-
 
 
 @function_resource(media_type=text_html)

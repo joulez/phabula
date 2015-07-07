@@ -74,6 +74,10 @@ def _static_directory_trees(app, router, base_dir, base_map, base_node, predicat
     mootools_node = app.get_node(router, js_map+'/mootools.js', 'mootools')
     mappings.add(mootools_node, (Mootools, predicates))
 
+    images_node = app.get_node(router,
+            base_map+'/imgs/:re:^.*(.png|.jpg|.gif)', 
+            'images')
+    mappings.add(images_node, (ImageAssets, predicates))
 
     ck_dir = os.path.join(js_dir, 'ckeditor')
 
