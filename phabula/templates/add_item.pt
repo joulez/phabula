@@ -126,11 +126,13 @@ body {
     min-width: 230px;
 }
 
-.text-field:hover {
+.text-field:hover, .ctrl-con:hover .multi-tagger .text-field {
     border: 1px solid #94899e;
+    z-index: 900;
 }
-.text-field:focus {
+.text-field:focus, .ctrl-con:focus .multi-tagger input {
     border: 1px solid #25252b;
+    z-index: 1000;
 }
 .basic-form button[type=submit], .link-button {
     font-family: inherit;
@@ -249,10 +251,10 @@ body {
             <div class="ctrl-con">
                 <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
                     <span style="padding-bottom:5px;" tal:content="field.label"></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
-                <div id="multi_tag" style="display:block;min-width:190px;" class="multi-tagger">
+                <div id="multi_tag" style="display:block;min-width:190px;margin-top:-1px;" class="multi-tagger">
                     <tal:render tal:content="structure: field.render()"/>
-                    <a style="margin-left:5px;display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'plus-21px.png')});" class="empty-box add-tag" href="#"></a><a
-                     style="display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'minus-21px.png')});" class="empty-box remove-tag" href="#"></a>
+                    <span style="margin-left:5px;display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'plus-21px.png')});" class="empty-box add-tag" href="#"></span><span
+                     style="display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'minus-21px.png')});" class="empty-box remove-tag" href="#"></span>
                 </div>
             <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
             </div>
@@ -263,7 +265,7 @@ body {
                     <span style="padding-bottom:5px;" tal:content="field.label"></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
                 <div style="display:inline-block;min-width:190px;">
                    <tal:render tal:content="structure: field.render()"/>
-                   <a style="margin:5px;display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'plus-21px.png')});" class="empty-box" href="#"></a>
+                   <span id="add_section" style="margin:5px;display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'plus-21px.png')});" class="empty-box" href="#"></span>
                 </div>
             <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
             </div>
@@ -347,6 +349,22 @@ body {
     }
     
     </script>
+    <script type="text/javascript">
+    function getForm(){
+        if (this.status == 200){
+            console.debug(this.status);
+        }
+    }
+    
+    (function(){
+        var request = new XMLHttpRequest();
+        request.onload = getForm;
+        request.open('GET', '/news/forms/add-section', true);
+        request.send();
+    })();
+    </script>
+
+    
 </form>
 <!--! Form Override -->
         <script type="text/javascript">

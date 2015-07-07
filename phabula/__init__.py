@@ -138,6 +138,18 @@ def reg_add_item(app, router, base_path, formbase, serializer, **config):
     app.registry.mappings.add(app.get_node(router, path, 'add_item'), 
             (resource, predicates))
 
+def reg_add_section(app, router, base_path, formbase, serializer, **config):
+    predicates = config.get('predicates')
+
+    path = urljoin(base_path, 'forms/add-section')
+
+    resource = addsection(formbase, serializer)
+
+    predicates.append(request_methods({'POST', 'GET'}))
+    
+    app.registry.mappings.add(app.get_node(router, path, 'add_section'), 
+            (resource, predicates))
+
 
 def setup_db(app, config):
     predicates = config.get('predicates', [])
@@ -217,6 +229,10 @@ def setup(app, path=None, host_maps=None, template_dir=None,
     reg_add_item(app, router, base_path,
             formbase=formbase,
             serializer=serializer, 
+            **config)
+    reg_add_section(app, router, base_path,
+            formbase=formbase,
+            serializer=serializer,
             **config)
     return app
 

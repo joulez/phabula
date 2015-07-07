@@ -1,0 +1,16 @@
+<form  id="${form.id}" name="${form.name}" method="${form.method}" action="${form.action}" tal:attributes="novalidate 'novalidate' if form.novalidate else None" enctype="${form.enctype}">
+    <div id="form_inner">
+        <div tal:define="field form.get_field('section')" class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
+            <div class="ctrl-con">
+                <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
+                    <span tal:content="field.label"></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
+            <tal:render tal:content="structure: field.render()"/>
+            <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
+            </div>
+        </div>
+        <tal:f_loop tal:repeat="field form.get_fields(types='hidden')" tal:content="structure: field.render()"></tal:f_loop>
+    <div id="btn_main" class="btn-con contain">
+        <tal:b_loop tal:repeat="button form.get_buttons()" tal:content="structure: button.render()"/>
+    </div>
+    </div>
+</form>

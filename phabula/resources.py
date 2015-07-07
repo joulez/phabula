@@ -270,6 +270,53 @@ def add_item_form(resource, context, session):
     return form
 
 
+def addsection(formbase, serializer):
+    def form_factory(self, context,session):
+        serializer = self.serializer
+
+        form = HTMLBasicForm(context['lookup']['path'],
+            title=self.label,
+            novalidate=True,
+            enctype='application/x-www-form-urlencoded')
+        section = TextInput('section', required=True, id='section_field',
+            label='Add Section', maxlength=128, css_class='text-field',
+            width='100%')
+        fkey = HiddenInput('fkey', required=False, id='f_key',
+            value=random64())
+        add = Button('submit', 'action', 'add', label='Add',
+            id='submit_button')
+        form.set_fields(section, fkey)
+        form.set_buttons(add)
+        return form
+
+    class AddSection(metaclass=formbase):
+        meta = dict(
+                id='addsection',
+                label='Add Section Value',
+                serializer=serializer,
+                form_factory=form_factory)
+        
+        def set_headers(self, response):
+            hdrs = (headers.cache_control(['no-cache', 'no-store',
+                    'must-revalidate']),
+                    headers.pragma('no-cache'),
+                    headers.expires(time.gmtime(0)))
+                    #headers.content_security_policy("default-src 'self'"
+                    #" 'unsafe-inline'; link-src 'none'"))
+            response.add_headers(hdrs)
+
+        def get(self, context, session):
+            resources = session.registry.resources
+            tmpl = resources.get('templates').get('add_section.pt')
+            s = session.get('pha_sess')
+            form = context['form']
+            self.set_fkey(form, s)
+            self.set_headers(session.response)
+            return [tmpl(context, session).encode()]
+
+    return AddSection
+
+
 def additem(formbase, serializer):
 
     class AddItem(metaclass=formbase):
@@ -540,27 +587,5 @@ def listitems(backend):
     preload(ListItems)
     return ListItems
 
-
-#@function_resource(media_type=text_html(charset='utf-8'))
-#def item(context, session):
-#    c = default_context.copy()
-#    c.update(context)
-#    def get_item_id(match):
-#        try:
-#            item_id = int(match.get('item'))
-#            return item_id
-#        except:
-#            return None
-#    item_id = get_item_id(context.get('match'))
-#    if not item_id:
-#        return session.response.not_found(context, session)
-#
-#    path = c['path']
-#    data = _test_item(item_id)
-#    c['title'] = data['title']
-#    c['item_id'] = item_id
-#    c['data'] = data
-#    tmpl = session.registry.resources.get('templates').get('item.pt')
-#    return [tmpl(c, session).encode()]
 
 # vim:set sw=4 sts=4 ts=4 et tw=79:
