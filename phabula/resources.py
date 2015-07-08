@@ -5,7 +5,8 @@ import time
 from psyion.utils import (
         function_resource,
         random64,
-        SignedSerializer
+        SignedSerializer,
+        JSONSerializer
         )
 
 from reform import (
@@ -155,7 +156,8 @@ def signin_form(resource, context, session):
     tout = HiddenInput('tout', required=False, id='f_tout',
             value=serializer.dumps('300'))
     submit = Button('submit', 'action', 'signin', label='Sign In',
-            id='submit_button')
+            id='submit_button',
+            css_class='button-enabled')
     fkey = HiddenInput('fkey', required=False, id='f_key', value='')
     form.set_fields(user, password, remember, fkey, ts, tout)
     form.set_buttons(submit)
@@ -263,7 +265,7 @@ def add_item_form(resource, context, session):
     tout = HiddenInput('tout', required=False, id='f_tout',
             value=serializer.dumps('8000'))
     submit = Button('submit', 'action', 'add', label='Create',
-            id='submit_button')
+            id='submit_button', css_class='button-enabled')
     fkey = HiddenInput('fkey', required=False, id='f_key', value=random64())
     form.set_fields(title, tags, section, body, fkey, ts, tout)
     form.set_buttons(submit)
@@ -279,12 +281,13 @@ def addsection(formbase, serializer):
             novalidate=True,
             enctype='application/x-www-form-urlencoded')
         section = TextInput('section', required=True, id='section_field',
-            label='Add Section', maxlength=128, css_class='text-field',
+            label='Section', maxlength=128, css_class='text-field',
             width='100%')
         fkey = HiddenInput('fkey', required=False, id='f_key',
             value=random64())
-        add = Button('submit', 'action', 'add', label='Add',
-            id='submit_button')
+        add = Button('button', 'action', 'add', label='Add',
+            id='section_button',
+            css_class='button-enabled')
         form.set_fields(section, fkey)
         form.set_buttons(add)
         return form
@@ -292,9 +295,10 @@ def addsection(formbase, serializer):
     class AddSection(metaclass=formbase):
         meta = dict(
                 id='addsection',
-                label='Add Section Value',
+                label='Add New Section',
                 serializer=serializer,
-                form_factory=form_factory)
+                form_factory=form_factory,
+                default_format=media.types.text.xml)
         
         def set_headers(self, response):
             hdrs = (headers.cache_control(['no-cache', 'no-store',
@@ -313,6 +317,39 @@ def addsection(formbase, serializer):
             self.set_fkey(form, s)
             self.set_headers(session.response)
             return [tmpl(context, session).encode()]
+        
+        def post(self, context, session):
+            params = context['params']
+            form = context['form']
+            path = context['lookup']['path']
+            s = session.get('pha_sess')
+            response = session.response
+    
+            sess_fkey = s.get('form.key')
+            form.data = dict(params.get('body', {}))
+            form_fkey = form.get_field('fkey').value
+            
+            if form_fkey != sess_fkey:
+                pass
+                #return response.found(context, session, location=path)
+    
+            if form.validate():
+                password = form.get_field('password').value
+                user = form.get_field('user').value
+                del s['form.key']
+                if form.get_field('remember').checked is False:
+                    s['user'] = ''
+                    s.save()
+                else:
+                    s['user'] = user
+                    s.save()
+                return [b'thanks!']
+            
+            JSON = {'status': {'valid': False}, 'body': self.get(context,
+                session)[0].decode()}
+            response.add_header(headers.content_type(media.types.application.json).header)
+            return [JSONSerializer.serialize(JSON).encode()]
+
 
     return AddSection
 
