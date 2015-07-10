@@ -45,7 +45,7 @@ def _register(app, router, base_path, **config):
     """
     predicates = config['predicates']
 #    _signin_resource(app, router, base_path, predicates)
-    _base_resource(app, router, base_path, predicates)
+#    _base_resource(app, router, base_path, predicates)
     #_listing_resource(app, router, base_path, predicates)
     #_item_resource(app, router, base_path, predicates)
 #    _add_item_resource(app, router, base_path, predicates)

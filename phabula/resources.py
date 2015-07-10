@@ -64,33 +64,62 @@ def create_formbase(backend, serializer):
                         }
                     ),
                 'default_format': (DEFAULT, text_html),
+                'session_name': REQUIRED,
+                'enable_key': (DEFAULT, True),
+                'enable_timeout': (DEFAULT, False),
+                'key_factory': (DEFAULT, staticmethod(random64)),
+                'key_name': (DEFAULT, None),
+                'timeout': (DEFAULT, 0),
+                'template': REQUIRED
                 }
+
+        def init(cls):
+            backend.init(cls)
+            if cls.enable_key == True and not cls.key_name:
+                cls.key_name = cls.id+'_key'
     
         class BASE(backend.BASE):
-            
+
+            def render(self, context, session):
+                tmpl = session.registry.resources.get('templates').get(self.template)
+                self.set_headers(session.response)
+                return [tmpl(context, session).encode()]
+
             def get_media_type(self, session):
                 return session.response.get_header(content_type)
     
             def set_media_type(self, session, value):
                 session.response.add_header(content_type(value).header)
     
-            def set_fkey(self, form, session):
-                session['form.key'] = form.get_field('fkey').value = random64()
-                session.save()
-    
+            def set_session_value(self, session, key, value):
+                sname = session.get(self.session_name)
+                sname[key] = value
+                sname.save()
+
+            def get_session_value(self, session, key, remove=True):
+                sname = session.get(self.session_name)
+                if not sname:
+                    return ''
+
+                v = sname.get(key)
+
+                if v and remove == True:
+                    del sname[key]
+                return v
+
             def check_timeout(self, context):
                 form = context['form']
                 serializer = self.serializer
-                try:
+                if True:
                     ts = float(serializer.loads(form.get_field('ts').value,
                         decode=True))
                     tout = float(serializer.loads(form.get_field('tout').value,
                         decode=True))
-                    if ts+tout > context['current_ts']:
-    
-                        return False, int(tout)
-                    return True, int(tout)
-                except:
+
+                    if ts+tout < context['timestamp']:
+                        return True, int(tout)
+                    return False, int(tout)
+                else:
                     return None, None
         
             def set_headers(self, response):
@@ -111,32 +140,218 @@ def create_formbase(backend, serializer):
                 msg = ('Invalid format request - Valid formats: '
                     ' %r'%str(self.formats))
                 return session.response.bad_request(context, session, msg)
+
+            def set_form_key(self, form, keyvalue=''):
+                field = form.get_field(self.key_name)
+                if field is None:
+                    form.set_field(HiddenInput(self.key_name, value=keyvalue))
+                    return
+                field.value = keyvalue
+
+            def get_form_key(self, form):
+                return form.get_field(self.key_name) 
+
+            def check_session(self, session):
+                s = session.get(self.session_name)
+                if 'NEW' in s.state:
+                    path+='?c_req=1'
+                    return response.found(context, session, location=path)
+
+            def set_form_timeout(self, form):
+                ts = HiddenInput('ts', required=False, id='f_ts',
+                    value=serializer.dumps(str(time.time())))
+                tout = HiddenInput('tout', required=False, id='f_tout',
+                    value=serializer.dumps(str(self.timeout)))
+                form.set_fields(ts, tout)
     
             def __call__(self, context, session):
+                response = session.response
                 if self.set_format(context, session) is False:
                     return self.invalid_format(context, session)
     
                 c = default_context.copy()
                 c.update(context)
-                c['current_ts'] = time.time()
+                c['timestamp'] = time.time()
                 
                 if c['method'] == 'head':
                     self.set_headers(session.response)
-                    return []
+                    return ()
                 else:
-                    c['form'] = self.form_factory(c, session)
-                    if c['method'] == 'post':
-                        return self.post(c, session)
+                    form = c['form'] = self.form_factory(c, session)
+
+                    if self.enable_key:
+                        form.set_field(HiddenInput(self.key_name))
+
+                    if self.enable_timeout:
+                        self.set_form_timeout(c['form'])
+
+                    if c['method'] == 'get':
+                        return self.GET(c, session)
                     else:
-                        return self.get(c, session)
+                        return self.POST(c, session)
     
-            def get(self, context, session):
-                raise NotImplementedError('Subclass to override method.')
+            def GET(self, context, session):
+                if self.enable_key:
+                    keyvalue = self.key_factory()
+                    self.set_form_key(context['form'], keyvalue=keyvalue)
+                    self.set_session_value(session, self.key_name, keyvalue)
+
+                if self.enable_timeout:
+                    self.set_form_timeout(context['form'])
+
+                return self.render(context, session)
     
-            def post(self, context, session):
-                raise NotImplementedError('Subclass to override method.')
+            def POST(self, context, session):
+                self.check_session(session)
+                response = session.response
+                form = context['form']
+                if self.enable_key:
+                    self.set_form_key(form, keyvalue='')
+                
+                params = context['params']
+                path = context['lookup']['path']
+                form.data = dict(params.get('body', {}))
+
+                if self.enable_key:
+                    fvalue = form.get_field(self.key_name).value
+                    svalue = self.get_session_value(session, self.key_name)
+                    if fvalue != svalue:
+                        return response.found(context, session, location=path)
+
+                if self.enable_timeout:
+                    tout = self.check_timeout(context)
+    
+                    if tout[0] in (True, None):
+                        if tout[0] == True:
+                            path += '?tout={}'.format(tout[1])
+                        return response.found(context, session, location=path)
+
+                if form.validate():
+                    return True
+                return self.GET(context, session)
     
     return ReformBase
+
+
+
+def addsection(formbase, serializer):
+    def form_factory(self, context,session):
+        serializer = self.serializer
+
+        form = HTMLBasicForm(context['lookup']['path'],
+            title=self.label,
+            novalidate=True,
+            enctype='application/x-www-form-urlencoded')
+        section = TextInput('section', required=True, id='section_field',
+            label='Section', maxlength=128, css_class='text-field',
+            width='100%')
+        add = Button('button', 'action', 'add', label='Add',
+            id='section_button',
+            css_class='button-enabled')
+        form.set_fields(section)
+        form.set_buttons(add)
+        return form
+
+    class AddSection(metaclass=formbase):
+        meta = dict(
+                id='addsection',
+                label='Add New Section',
+                serializer=serializer,
+                form_factory=form_factory,
+                default_format=media.types.text.xml,
+                enable_key=True,
+                session_name='pha_sess',
+                template='add_section.pt'
+                )
+        
+        def set_headers(self, response):
+            hdrs = (headers.cache_control(['no-cache', 'no-store',
+                    'must-revalidate']),
+                    headers.pragma('no-cache'),
+                    headers.expires(time.gmtime(0)))
+                    #headers.content_security_policy("default-src 'self'"
+                    #" 'unsafe-inline'; link-src 'none'"))
+            response.add_headers(hdrs)
+
+        def GET(self, context, session):
+            return super(AddSection, self).GET(context, session)
+        
+        def POST(self, context, session):
+            r = super(AddSection, self).POST(context, session)
+            if context['form'].valid:
+                self.commit(form.data)
+            else:
+                if session.response.status == 200:
+                    JSON = {'status': {'valid': False}, 'body': r[0].decode()}
+                    session.response.add_header(headers.content_type(
+                        media.types.application.json).header)
+                    return [JSONSerializer.serialize(JSON).encode()]
+            return ()
+
+    return AddSection
+
+
+def additem(formbase, serializer):
+
+    def add_item_form(resource, context, session):
+        serializer = resource.serializer
+        form = HTMLBasicForm(context['lookup']['path'], 
+            title='Create New Article',
+            id='create_item', novalidate=True, 
+            enctype='application/x-www-form-urlencoded')
+        title = TextInput('title', required=True, id='title_field',
+                label='Title', maxlength=128, css_class='text-field',
+                width='100%')
+        tags =  TextInput('tags', required=True, id='tags_field',
+                label='Tags', maxlength=128, css_class='text-field')
+        section = SelectInput('section', id='section_field',
+                label='Section', css_class='text-field select-field', 
+                required=True)
+        body = TextArea('body', required=True, id='body_field',
+                label='Content', cols=64, rows=10, css_class='text-field', 
+                wrap='hard', maxlength=4096)
+        option = SelectOption('select', 'select')
+        section.add_option(option)
+    
+    
+        submit = Button('submit', 'action', 'add', label='Create',
+                id='submit_button', css_class='button-enabled')
+        form.set_fields(title, tags, section, body)
+        form.set_buttons(submit)
+        return form
+
+
+    class AddItem(metaclass=formbase):
+        meta = dict(id='add_item',
+                label='Create New Article',
+                form_factory=add_item_form,
+                serializer=serializer,
+                session_name='pha_sess',
+                template='add_item.pt',
+                enable_timeout=True,
+                timeout=100000
+                )
+
+        def set_headers(self, response):
+            hdrs = (headers.cache_control(['no-cache', 'no-store',
+                    'must-revalidate']),
+                    headers.pragma('no-cache'),
+                    headers.expires(time.gmtime(0)))
+                    #headers.content_security_policy("default-src 'self'"
+                    #" 'unsafe-inline'; link-src 'none'"))
+            response.add_headers(hdrs)
+    
+        def GET(self, context, session):
+            router = context['router']
+            url = router.get_url('psyion.org', 'LIST.ckeditor', 'ckeditor.js',
+                    port=session.request.server_port)
+            path = router.get_path('LIST.ckeditor',
+                    'ckeditor.js', cache=True)
+            context['js_editor'] = path
+            context['mootools'] = router.get_path('mootools')
+            return super(AddItem, self).GET(context, session)
+    
+    return AddItem
 
 
 
@@ -158,8 +373,7 @@ def signin_form(resource, context, session):
     submit = Button('submit', 'action', 'signin', label='Sign In',
             id='submit_button',
             css_class='button-enabled')
-    fkey = HiddenInput('fkey', required=False, id='f_key', value='')
-    form.set_fields(user, password, remember, fkey, ts, tout)
+    form.set_fields(user, password, remember, ts, tout)
     form.set_buttons(submit)
     return form
 
@@ -167,15 +381,15 @@ def signin_form(resource, context, session):
 def signinform(formbase):
     class SigninForm(metaclass=formbase):
     
-        meta = {
-                'id': 'signin',
-                'label': 'Signin Form',
-                'form_factory': signin_form,
-                'formats': {
-                    text_html,
-                    media.types.text.html
-                    }
-                }
+        meta = dict(id='signin',
+                label='Signin Form',
+                form_factory=signin_form,
+                formats={text_html},
+                session_name='pha_sess',
+                enable_timeout=True,
+                timeout=300,
+                template='signin.pt'
+                )
     
         def set_headers(self, response):
             hdrs = (headers.cache_control(['no-cache', 'no-store',
@@ -186,44 +400,26 @@ def signinform(formbase):
                     " 'unsafe-inline'; link-src 'none'"))
             response.add_headers(hdrs)
     
-        def get(self, context, session):
-            tmpl = session.registry.resources.get('templates').get('signin.pt')
-            s = session.get('pha_sess')
-            form = context['form']
+        def GET(self, context, session):
+            super(SiginForm, self).GET(context, session)
+            s = session.get(self.session_name)
             user = s.get('user')
             if user:
                 form.get_field('user').value = user
-            self.set_fkey(form, s)
-            self.set_headers(session.response)
-            return [tmpl(context, session).encode()]
+            return self.render(context, session)
     
-        def post(self, context, session):
+        def POST(self, context, session):
             params = context['params']
             form = context['form']
             path = context['lookup']['path']
             s = session.get('pha_sess')
             response = session.response
     
-            if 'NEW' in s.state:
-                path+='?c_req=1'
-                return response.found(context, session, location=path)
-    
             sess_fkey = s.get('form.key')
-            form.data = dict(params.get('body', {}))
-            form_fkey = form.get_field('fkey').value
+            if self.enable_key:
+                form.data = dict(params.get('body', {}))
+                form_fkey = form.get_field('fkey').value
             
-            if form_fkey != sess_fkey:
-                return response.found(context, session, location=path)
-    
-            tout = self.check_timeout(context)
-    
-            if tout[0] is True:
-                path += '?tout={}'.format(tout[1])
-                return response.found(context, session, location=path)
-    
-            if tout[0] is None:
-                return response.found(context, session, location=path)
-    
             if form.validate():
                 password = form.get_field('password').value
                 user = form.get_field('user').value
@@ -236,207 +432,9 @@ def signinform(formbase):
                     s.save()
                 return [b'thanks!']
     
-            return self.get(context, session)
+            return self._get(context, session)
     return SigninForm
 
-def add_item_form(resource, context, session):
-    serializer = resource.serializer
-    form = HTMLBasicForm(context['lookup']['path'], 
-        title='Create New Article',
-        id='create_item', novalidate=True, 
-        enctype='application/x-www-form-urlencoded')
-    title = TextInput('title', required=True, id='title_field',
-            label='Title', maxlength=128, css_class='text-field',
-            width='100%')
-    tags =  TextInput('tags', required=True, id='tags_field',
-            label='Tags', maxlength=128, css_class='text-field')
-    section = SelectInput('section', id='section_field',
-            label='Section', css_class='text-field select-field', 
-            required=True)
-    body = TextArea('body', required=True, id='body_field',
-            label='Content', cols=64, rows=10, css_class='text-field', 
-            wrap='hard', maxlength=4096)
-    option = SelectOption('select', 'select')
-    section.add_option(option)
-
-
-    ts = HiddenInput('ts', required=False, id='f_ts',
-            value=serializer.dumps(str(time.time())))
-    tout = HiddenInput('tout', required=False, id='f_tout',
-            value=serializer.dumps('8000'))
-    submit = Button('submit', 'action', 'add', label='Create',
-            id='submit_button', css_class='button-enabled')
-    fkey = HiddenInput('fkey', required=False, id='f_key', value=random64())
-    form.set_fields(title, tags, section, body, fkey, ts, tout)
-    form.set_buttons(submit)
-    return form
-
-
-def addsection(formbase, serializer):
-    def form_factory(self, context,session):
-        serializer = self.serializer
-
-        form = HTMLBasicForm(context['lookup']['path'],
-            title=self.label,
-            novalidate=True,
-            enctype='application/x-www-form-urlencoded')
-        section = TextInput('section', required=True, id='section_field',
-            label='Section', maxlength=128, css_class='text-field',
-            width='100%')
-        fkey = HiddenInput('fkey', required=False, id='f_key',
-            value=random64())
-        add = Button('button', 'action', 'add', label='Add',
-            id='section_button',
-            css_class='button-enabled')
-        form.set_fields(section, fkey)
-        form.set_buttons(add)
-        return form
-
-    class AddSection(metaclass=formbase):
-        meta = dict(
-                id='addsection',
-                label='Add New Section',
-                serializer=serializer,
-                form_factory=form_factory,
-                default_format=media.types.text.xml)
-        
-        def set_headers(self, response):
-            hdrs = (headers.cache_control(['no-cache', 'no-store',
-                    'must-revalidate']),
-                    headers.pragma('no-cache'),
-                    headers.expires(time.gmtime(0)))
-                    #headers.content_security_policy("default-src 'self'"
-                    #" 'unsafe-inline'; link-src 'none'"))
-            response.add_headers(hdrs)
-
-        def get(self, context, session):
-            resources = session.registry.resources
-            tmpl = resources.get('templates').get('add_section.pt')
-            s = session.get('pha_sess')
-            form = context['form']
-            self.set_fkey(form, s)
-            self.set_headers(session.response)
-            return [tmpl(context, session).encode()]
-        
-        def post(self, context, session):
-            params = context['params']
-            form = context['form']
-            path = context['lookup']['path']
-            s = session.get('pha_sess')
-            response = session.response
-    
-            sess_fkey = s.get('form.key')
-            form.data = dict(params.get('body', {}))
-            form_fkey = form.get_field('fkey').value
-            
-            if form_fkey != sess_fkey:
-                pass
-                #return response.found(context, session, location=path)
-    
-            if form.validate():
-                password = form.get_field('password').value
-                user = form.get_field('user').value
-                del s['form.key']
-                if form.get_field('remember').checked is False:
-                    s['user'] = ''
-                    s.save()
-                else:
-                    s['user'] = user
-                    s.save()
-                return [b'thanks!']
-            
-            JSON = {'status': {'valid': False}, 'body': self.get(context,
-                session)[0].decode()}
-            response.add_header(headers.content_type(media.types.application.json).header)
-            return [JSONSerializer.serialize(JSON).encode()]
-
-
-    return AddSection
-
-
-def additem(formbase, serializer):
-
-    class AddItem(metaclass=formbase):
-        meta = {
-                'id': 'additem',
-                'label': 'Add Item Form',
-                'form_factory': add_item_form,
-                'formats': {
-                    text_html,
-                    media.types.text.html
-                    },
-                'serializer': serializer
-                }
-    
-        def set_headers(self, response):
-            hdrs = (headers.cache_control(['no-cache', 'no-store',
-                    'must-revalidate']),
-                    headers.pragma('no-cache'),
-                    headers.expires(time.gmtime(0)))
-                    #headers.content_security_policy("default-src 'self'"
-                    #" 'unsafe-inline'; link-src 'none'"))
-            response.add_headers(hdrs)
-    
-        def get(self, context, session):
-            router = context['router']
-            url = router.get_url('psyion.org', 'LIST.ckeditor', 'ckeditor.js',
-                    port=session.request.server_port)
-            path = router.get_path('LIST.ckeditor',
-                    'ckeditor.js', cache=True)
-            context['js_editor'] = path
-            context['mootools'] = router.get_path('mootools')
-            tmpl = session.registry.resources.get('templates').get('add_item.pt')
-            s = session.get('pha_sess')
-            form = context['form']
-            user = s.get('user')
-            if user:
-                form.get_field('user').value = user
-            self.set_fkey(form, s)
-            self.set_headers(session.response)
-            return [tmpl(context, session).encode()]
-    
-        def post(self, context, session):
-            params = context['params']
-            form = context['form']
-            path = context['lookup']['path']
-            s = session.get('pha_sess')
-            response = session.response
-    
-            if 'NEW' in s.state:
-                path+='?c_req=1'
-                return response.found(context, session, location=path)
-    
-            sess_fkey = s.get('form.key')
-            form.data = dict(params.get('body', {}))
-            form_fkey = form.get_field('fkey').value
-            
-            if form_fkey != sess_fkey:
-                return response.found(context, session, location=path)
-    
-            tout = self.check_timeout(context)
-    
-            if tout[0] is True:
-                path += '?tout={}'.format(tout[1])
-                return response.found(context, session, location=path)
-    
-            if tout[0] is None:
-                return response.found(context, session, location=path)
-    
-            if form.validate():
-                password = form.get_field('password').value
-                user = form.get_field('user').value
-                del s['form.key']
-                if form.get_field('remember').checked is False:
-                    s['user'] = ''
-                    s.save()
-                else:
-                    s['user'] = user
-                    s.save()
-                return [b'thanks!']
-    
-            return self.get(context, session)
-    
-    return AddItem
 
 
 class Mootools(metaclass=IOFileResource):
@@ -479,27 +477,27 @@ def map_static_directory(app, base_path, dir, pattern):
     pass
 
 
-@function_resource(media_type=text_html)
-def root(context, session):
-    pha_sess = session.get('pha_sess')
-    sess_id = pha_sess.get('id')
-    if sess_id is None:
-        pha_sess['id'] = 0
-        pha_sess['l_count'] = 0
-        pha_sess.save()
-    c = default_context.copy()
-    c.update(context)
-    tmpl = session.registry.resources.get('templates').get('root.pt')
-    return [tmpl(c, session).encode()]
-
-@function_resource(media_type=text_html(charset='utf-8'))
-def manager_home(context, session):
-    pha_sess = session.get('pha_sess')
-    sess_id = pha_sess.get('id')
-    c = default_context.copy()
-    c.update(context)
-    tmpl = session.registry.resources.get('templates').get('manager_home.pt')
-    return [tmpl(c, session).encode()]
+#@function_resource(media_type=text_html)
+#def root(context, session):
+#    pha_sess = session.get('pha_sess')
+#    sess_id = pha_sess.get('id')
+#    if sess_id is None:
+#        pha_sess['id'] = 0
+#        pha_sess['l_count'] = 0
+#        pha_sess.save()
+#    c = default_context.copy()
+#    c.update(context)
+#    tmpl = session.registry.resources.get('templates').get('root.pt')
+#    return [tmpl(c, session).encode()]
+#
+#@function_resource(media_type=text_html(charset='utf-8'))
+#def manager_home(context, session):
+#    pha_sess = session.get('pha_sess')
+#    sess_id = pha_sess.get('id')
+#    c = default_context.copy()
+#    c.update(context)
+#    tmpl = session.registry.resources.get('templates').get('manager_home.pt')
+#    return [tmpl(c, session).encode()]
 
 
 def _test_list(page_no, page_size=10):

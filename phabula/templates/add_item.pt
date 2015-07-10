@@ -394,16 +394,28 @@ body {
         function checkStatus(){
             if (this.status != 200){
             } else {
-                var json = JSON.parse(this.responseText);
-                if (json['status']['valid'] === true){
-                    document.getElementById('xhr_add_section').remove()
-                    document.getElementById('overlay').style.display = "none";
-                } else {
+                try {
+                    var json = JSON.parse(this.responseText);
+                    if (json['status']['valid'] === true){
+                        document.getElementById('xhr_add_section').remove()
+                        document.getElementById('overlay').style.display = "none";
+                    } else {
+                        var con = getContainer();
+                        con.innerHTML = json['body'];
+                        con._invalid = true;
+                        con._init = false;
+                        con._waiting = false;
+                        setupForm(caller);
+                    }
+                }
+                catch(error) {
                     var con = getContainer();
-                    con.innerHTML = json['body'];
                     con._invalid = true;
                     con._init = false;
                     con._waiting = false;
+                    var btn = con.getElementById('section_button');
+                    btn.style.backgroundColor = '#E60000';
+                    btn.innerHTML = 'ERROR - please try again later.';
                     setupForm(caller);
                 }
             }
@@ -419,7 +431,7 @@ body {
             r = new XMLHttpRequest();
             r.open('POST', this.getElement('form').getAttribute('action'), true)
             r.onload = checkStatus;
-            r.send();}.bind(this), 60*600);
+            r.send();}.bind(this), 0);
 
         };
 
