@@ -285,220 +285,211 @@ body {
             <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
             </div>
         </div>
-        <!--!FORM FIELDS
-        <div class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
-            <div class="ctrl-con">
-                <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
-                    <span style="float:left;" tal:content="field.label"></span><span></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
-            <tal:render tal:content="structure: field.render()"/>
-            <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
-            </div>
-        </div>
-        -->
         <tal:f_loop tal:repeat="field form.get_fields(types='hidden')" tal:content="structure: field.render()"></tal:f_loop>
     <div id="btn_main" class="btn-con contain">
         <tal:b_loop tal:repeat="button form.get_buttons()" tal:content="structure: button.render()"/>
     </div>
     </div>
-    <script type="text/javascript">
+<script type="text/javascript">
 
-    var injectAddTags = function(){
-            var multiTag = $('multi_tag');
-            var multiTagLast = $('multi_tag_last');
-            var tagClone = multiTag.clone();
-            tagClone.children[0].value = '';
-            addTagListener(tagClone.children[1]);
-            removeTagListener(tagClone.children[2]);
-            tagClone.id = multiTag.id+'_last';
+var injectAddTags = function(){
+        var multiTag = $('multi_tag');
+        var multiTagLast = $('multi_tag_last');
+        var tagClone = multiTag.clone();
+        tagClone.children[0].value = '';
+        addTagListener(tagClone.children[1]);
+        removeTagListener(tagClone.children[2]);
+        tagClone.id = multiTag.id+'_last';
 
-            if (multiTagLast){
-                multiTagLast.id = '';
-                tagClone.inject(multiTagLast, 'after');
-            } else {
-                tagClone.inject(multiTag, 'after');
-            }
-    };
+        if (multiTagLast){
+            multiTagLast.id = '';
+            tagClone.inject(multiTagLast, 'after');
+        } else {
+            tagClone.inject(multiTag, 'after');
+        }
+};
 
-    var removeTag = function(){
-        var pid = this.parentNode.id;
-        var tagList = document.getElementsByClassName('multi-tagger');
-        if (pid == ''){
-            this.parentNode.remove();
-        } else if (pid == 'multi_tag_last') {
-            if (tagList.length > 2){
-                this.parentNode.previousElementSibling.id = pid;
-            }
-            this.parentNode.remove();
-        } else if (pid == 'multi_tag'){
-            if (tagList.length > 1){
-                this.parentNode.nextElementSibling.remove();
+var removeTag = function(){
+    var pid = this.parentNode.id;
+    var tagList = document.getElementsByClassName('multi-tagger');
+    if (pid == ''){
+        this.parentNode.remove();
+    } else if (pid == 'multi_tag_last') {
+        if (tagList.length > 2){
+            this.parentNode.previousElementSibling.id = pid;
+        }
+        this.parentNode.remove();
+    } else if (pid == 'multi_tag'){
+        if (tagList.length > 1){
+            this.parentNode.nextElementSibling.remove();
+        }
+    }
+};
+
+var addTagListener = function(tag){
+    tag.addEventListener('click', injectAddTags);
+};
+
+var removeTagListener = function(tag){
+    tag.addEventListener('click', removeTag.bind(tag));
+};
+
+var addTags = document.getElementsByClassName('add-tag');
+var removeTags = document.getElementsByClassName('remove-tag');
+    
+for (i = 0; i < addTags.length; i++){
+    addTagListener(addTags[i]);
+}
+
+for (i=0; i < removeTags.length; i++){
+    removeTagListener(removeTags[i]);
+}
+
+</script>
+<script type="text/javascript">
+var addSectionForm;
+var sectionBlk = document.getElementById('section');
+function createOverlay(){
+    var overlay = document.createElement('div');
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.position = 'fixed';
+    overlay.style.backgroundColor = '#FFF';
+    overlay.style.opacity = 0.4;
+    overlay.style.zIndex = 999;
+    overlay.style.display = "none";
+    overlay.setProperty('id', 'overlay');
+    overlay.addEventListener('click', function(){
+        var con = getContainer();
+        if (con._waiting == false){
+            document.getElementById('overlay').style.display = "none";
+            document.getElementById('xhr_add_section').style.display = "none";
+            if (con._invalid == true){
+                con._init = false;
+                con._invalid = false;
+                getForm();
             }
         }
-    };
-    
-    var addTagListener = function(tag){
-        tag.addEventListener('click', injectAddTags);
-    };
+    });
+    document.body.insertBefore(overlay, document.getElementById('site_head'));
+}
 
-    var removeTagListener = function(tag){
-        tag.addEventListener('click', removeTag.bind(tag));
-    };
-    
-    var addTags = document.getElementsByClassName('add-tag');
-    var removeTags = document.getElementsByClassName('remove-tag');
-        
-    for (i = 0; i < addTags.length; i++){
-        addTagListener(addTags[i]);
-    }
-    
-    for (i=0; i < removeTags.length; i++){
-        removeTagListener(removeTags[i]);
-    }
-    
-    </script>
-    <script type="text/javascript">
-    var addSectionForm;
-    var sectionBlk = document.getElementById('section');
-    function createOverlay(){
-        var overlay = document.createElement('div');
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.position = 'fixed';
-        overlay.style.backgroundColor = '#FFF';
-        overlay.style.opacity = 0.4;
-        overlay.style.zIndex = 999;
-        overlay.style.display = "none";
-        overlay.setProperty('id', 'overlay');
-        overlay.addEventListener('click', function(){
-            var con = getContainer();
-            if (con._waiting == false){
-                document.getElementById('overlay').style.display = "none";
-                document.getElementById('xhr_add_section').style.display = "none";
-                if (con._invalid == true){
-                    con._init = false;
-                    con._invalid = false;
-                    getForm();
-                }
-            }
-        });
-        document.body.insertBefore(overlay, document.getElementById('site_head'));
-    }
-
-    function setOverlay(){
-        document.getElementById('overlay').style.display = "block";
-    }
+function setOverlay(){
+    document.getElementById('overlay').style.display = "block";
+}
 
 
-    function renderForm(){
-        var caller = this;
-        function checkStatus(){
-            if (this.status != 200){
-            } else {
-                try {
-                    var json = JSON.parse(this.responseText);
-                    if (json['status']['valid'] === true){
-                        document.getElementById('xhr_add_section').remove()
-                        document.getElementById('overlay').style.display = "none";
-                    } else {
-                        var con = getContainer();
-                        con.innerHTML = json['body'];
-                        con._invalid = true;
-                        con._init = false;
-                        con._waiting = false;
-                        setupForm(caller);
-                    }
-                }
-                catch(error) {
+function renderForm(){
+    var caller = this;
+    function checkStatus(){
+        if (this.status != 200){
+        } else {
+            try {
+                var json = JSON.parse(this.responseText);
+                if (json['status']['valid'] === true){
+                    document.getElementById('xhr_add_section').remove()
+                    document.getElementById('overlay').style.display = "none";
+                } else {
                     var con = getContainer();
+                    con.innerHTML = json['body'];
                     con._invalid = true;
                     con._init = false;
                     con._waiting = false;
-                    var btn = con.getElementById('section_button');
-                    btn.style.backgroundColor = '#E60000';
-                    btn.innerHTML = 'ERROR - please try again later.';
                     setupForm(caller);
                 }
             }
-        };
-
-        function postForm(){
-            var btn = this.getElementById('section_button');
-            getContainer()._waiting = true;
-            btn.disabled = true;
-            btn.setAttribute('class', 'button-disabled');
-            btn.innerHTML = 'Adding...';
-            setTimeout(function(){
-            r = new XMLHttpRequest();
-            r.open('POST', this.getElement('form').getAttribute('action'), true)
-            r.onload = checkStatus;
-            r.send();}.bind(this), 0);
-
-        };
-
-        function setupForm(p){
-            var con = getContainer();
-            con.setPosition(p.getPosition());
-            if(con._init === false){
-                btn = con.getElementById('section_button');
-                btn.addEventListener('click', postForm.bind(con));
-                con._init = true;
+            catch(error) {
+                var con = getContainer();
+                con._invalid = true;
+                con._init = false;
+                con._waiting = false;
+                var btn = con.getElementById('section_button');
+                btn.style.backgroundColor = '#E60000';
+                btn.innerHTML = 'ERROR - please try again later.';
+                setupForm(caller);
             }
-            con.style.display = 'block';
         }
-        setOverlay();
-        setupForm(this);
-    }
+    };
 
-    function getContainer(){
-        var e = document.getElementById('xhr_add_section');
-        if (e == null){
-            e = document.createElement('div');
-            e.style.zIndex = 1000;
-            e.setProperty('id', 'xhr_add_section');
-            e.style.position = 'absolute';
-            e.style.width = '50% auto';
-            e.style.display = "none"
-            e._init = false;
-            e._invalid = false;
-            e._waiting = false;
-            e.inject(document.getElementById('overlay'), 'before');
+    function postForm(){
+        var btn = this.getElementById('section_button');
+        getContainer()._waiting = true;
+        btn.disabled = true;
+        btn.setAttribute('class', 'button-disabled');
+        btn.innerHTML = 'Adding...';
+        setTimeout(function(){
+        r = new XMLHttpRequest();
+        r.open('POST', this.getElement('form').getAttribute('action'), true)
+        r.onload = checkStatus;
+        r.send();}.bind(this), 0);
+
+    };
+
+    function setupForm(p){
+        var con = getContainer();
+        con.setPosition(p.getPosition());
+        if(con._init === false){
+            btn = con.getElementById('section_button');
+            btn.addEventListener('click', postForm.bind(con));
+            con._init = true;
         }
-        return e;
+        con.style.display = 'block';
     }
+    setOverlay();
+    setupForm(this);
+}
 
-    
-    function loadForm(){
-        if (this.status == 200){
-            getContainer().innerHTML = this.responseText;
-        }
+function getContainer(){
+    var e = document.getElementById('xhr_add_section');
+    if (e == null){
+        e = document.createElement('div');
+        e.style.zIndex = 1000;
+        e.setProperty('id', 'xhr_add_section');
+        e.style.position = 'absolute';
+        e.style.width = '50% auto';
+        e.style.display = "none"
+        e._init = false;
+        e._invalid = false;
+        e._waiting = false;
+        e.inject(document.getElementById('overlay'), 'before');
     }
-    
-    function getForm(){
-        var add_section = "${router.get_path('add_section')}";
-        var r = new XMLHttpRequest();
-        r.onload = loadForm;
-        r.open('GET', add_section, true);
-        r.send();
+    return e;
+}
+
+
+function loadForm(){
+    if (this.status == 200){
+        getContainer().innerHTML = this.responseText;
     }
+}
 
-    (function(){
-        createOverlay();
-        getForm();
-        addSection = document.getElementById('add_section');
-        addSection.addEventListener('click', renderForm.bind(addSection));
-    })();
+function getForm(){
+    var add_section = "${router.get_path('add_section')}";
+    var r = new XMLHttpRequest();
+    r.onload = loadForm;
+    r.open('GET', add_section, true);
+    r.send();
+}
 
-    </script>
+(function(){
+    createOverlay();
+    getForm();
+    var addSection = document.getElementById('add_section');
+    addSection.addEventListener('click', renderForm.bind(addSection));
+})();
 
-    
+</script>
+
+
 </form>
 <!--! Form Override -->
-        <script type="text/javascript">
-        CKEDITOR.replace('body_field');
-        </script>
-        </div>
-    </div>
-    </div>
+<script type="text/javascript">
+    CKEDITOR.replace('body_field', {
+    uiColor: '#F6FFFD'});
+</script>
+</div>
+</div>
+</div>
 </div>
 </div>
 <metal:head use-macro="load: site_footer.pt"/>
