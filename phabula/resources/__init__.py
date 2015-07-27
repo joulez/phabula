@@ -210,7 +210,6 @@ def create_formbase(backend, serializer):
                 
                 params = context['params']
                 path = context['lookup']['path']
-                print('form data => %s'%(params.get('body')))
                 form.data = dict(params.get('body', {}))
 
                 if self.enable_key:
