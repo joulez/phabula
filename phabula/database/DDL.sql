@@ -6,7 +6,8 @@ CREATE TABLE app (
     id integer PRIMARY KEY,
     ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     name text NOT NULL,
-    last_access NOT NULL DEFAULT CURRENT_TIMESTAMP
+    last_access NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version text NOT NULL DEFAULT '0.1'
 );
 
 CREATE TABLE items (
@@ -88,6 +89,7 @@ CREATE INDEX item_perms_item_id_idx ON item_perms(item_id);
 CREATE TABLE content (
     id integer PRIMARY KEY,
     item_id integer NOT NULL REFERENCES items(id),
+    title text NOT NULL,
     ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     data text NOT NULL,
     hash text NOT NULL
@@ -98,7 +100,8 @@ CREATE TABLE content_hist (
     id integer PRIMARY KEY,
     ts timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     item_id integer NOT NULL REFERENCES items(id),
-    content_id integer NOT NULL REFERENCES content(id)
+    content_id integer NOT NULL REFERENCES content(id),
+    raw_data text NOT NULL
 );
 
 CREATE TABLE content_authors (

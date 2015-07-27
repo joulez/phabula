@@ -1,4 +1,4 @@
-<div class="basic-form box-style">
+<div class="basic-form modal-box">
     <div class="basic-form-header">
         <h3 class="form-title" tal:content="form.title"></h3>
     </div>

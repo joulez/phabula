@@ -7,10 +7,6 @@ body {
     margin: 0;
     padding: 0;
 }
-#add_block {
-    margin: 60px auto;
-    width: 800px;
-}
 .link-button {
     background: #8890FF;
     display: block;
@@ -24,12 +20,10 @@ body {
 
 .link-button {
     font-family: inherit;
-    font-size: 13px;
     font-weight: bold;
     color: #fff;
     padding: 6px;
     width: 100%;
-    z-index: 1;
     background: #3A6EC2;
     display: block;
     box-sizing: border-box;
@@ -49,34 +43,88 @@ body {
     padding-top: 7px;
     padding-bottom: 5px;
 }
-.box-style {
-    font-family: Arial, sans-serif;
-    font-size: 13px;
-    background: #A9A4B7;
-    border-radius: 3px;
-    -moz-box-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    -webkit-box-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    z-index: 1;
+
+.ctrl-row {
+    padding: 3px;
+    border-radius: 2px;
+    border-width: 2px;
+    border-color: transparent;
+    border-style: solid;
+    /*background: #ECF4F3;*/
 }
+
+.input-error {
+/*    background: #FF7171;*/
+    border-radius: 2px;
+    border-width: 2px 2px 2px 2px;
+    border-style:  solid;
+    border-color:  rgba(246,53,117,0.7);
+    /*#F63575;*/
+    -moz-box-shadow: 0 0px 5px rgba(246,53,117,1);
+    -webkit-box-shadow: 0 0px 5px rgba(246,53,117,1);
+    box-shadow: 0 0px 5px rgba(256,53,117,1);
+}
+
+.input-error label > span {
+    /*color:#FFF;
+    text-shadow: 0px 0px 2px rgba(0,0,0,0.8);*/
+}
+
+.field-note {
+    margin: 3px 0 0 1px;
+    padding: 0;
+    font-weight: normal;
+    font-size: 77%;
+}
+
+.field-note:empty:before {
+    content: "\003";
+}
+
+.field-error {
+    color: #FF7171;
+    margin-left: 3px;
+}
+.modal-box {
+    font-family: inherit;
+    background: #B3AEBD;
+
+    border-radius: 3px;
+    border: 1px solid #696E87;
+    -moz-box-shadow: 0 1px 2px rgba(0,0,0,0.7);
+    -webkit-box-shadow: 0 1px 2px rgba(0,0,0,0.7);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.7);
+}
+
+.modal-box .basic-form-outer {
+    background: #F6FFFD;
+}
+
+.static-box {
+    font-family: inherit;
+    background: inherit;
+    /*border-radius: 3px;
+    border: 3px solid #BDA7D8;
+    -moz-box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    -webkit-box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);*/
+}
+
+.static-box h2 {
+    background: transparent !important;
+    margin: 0 0 5px;
+    padding: 10px 10px 0px 10px;
+    border-bottom: 2px solid #696E87;
+    color: #474A5B;
+}
+
+
 .info-box {
     padding: 13px;
-    font-family: Arial, sans-serif;
+    font-family: inherit;
     margin: 30px auto;
     width: 300px;
     background: #F6FFFD;
-}
-.empty-box {
-    border-radius: 2px;
-    background: #F2F2F2 no-repeat;
-    border: 1px solid #D2D2D2;
-    width: 21px;
-    height: 21px;
-    background-image: url(${router.get_path('images', 'plus-21px.png')});
-}
-.empty-box:active {
-    background: #D2D2D2;
-    background-position: 0px 1px;
 }
 </style>
 <style>
@@ -86,57 +134,123 @@ body {
     font-weight: 300;
     src: local('Open Sans Light'), local('OpenSans-Light'),
         url(//fonts.gstatic.com/s/opensans//v13/DXI1ORHCpsQm3Vp6mXoaTegdm0LZdjqr5-oayXSOefg.woff2) format('woff2')
-        url(//fonts.gstatic.com/s/opensans/v13/DXI1ORHCpsQm3Vp6mXoaTXhCUOGz7vYGh680lGh-uXM.woff) format('woff')
-    ;
+        url(//fonts.gstatic.com/s/opensans/v13/DXI1ORHCpsQm3Vp6mXoaTXhCUOGz7vYGh680lGh-uXM.woff) format('woff');
 }
+
 @font-face {
-    font-family: 'Open Sans';
+    font-family: 'Source Sans Pro';
     font-style: normal;
-    font-weight: 300;
-    src: local('Open Sans Light'), local('OpenSans-Light'),
-        url(//fonts.gstatic.com/s/opensans/v13/cJZKeOuBrn4kERxqtaUH3VtXRa8TVwTICgirnJhmVJw.woff2) format('woff2'),
-        url(//fonts.gstatic.com/s/opensans/v13/cJZKeOuBrn4kERxqtaUH3T8E0i7KZn-EPnyo3HZu7kw.woff) format('woff')
-    ;
+    font-weight: 400;
+    src: local('Source Sans Pro'), local('SourceSansPro-Regular'), 
+        url(//fonts.gstatic.com/s/sourcesanspro/v9/ODelI1aHBYDBqgeIAH2zlNV_2ngZ8dMf8fLgjYEouxg.woff2) format('woff2'), 
+        url(//fonts.gstatic.com/s/sourcesanspro/v9/ODelI1aHBYDBqgeIAH2zlBM0YzuT7MdOe03otPbuUS0.woff) format('woff');
 }
 </style>
 <style>
+.ctrl-group {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    position: relative;
+}
+@media (min-width: 767px) {
+    .static-block {
+        width: 100%;
+    }
+    .modal-dialog {
+        width: 100%;
+    }
+    .form-container {
+        padding: 0;
+    }
+    .group-50 {
+        width: 100%;
+    }   
+}
+
+@media (min-width: 768px) {
+    .static-block {
+        margin: 60px auto;
+        width: 800px;
+    }
+    .modal-dialog {
+        width: 256px;
+    }
+    .form-container {
+        padding: 13px 13px 26px 13px;
+    }
+    .basic-form-inner {
+        padding: 5px;
+    }
+    .group-50 {
+        width: 50%;
+    }
+}
+
+</style>
+<style>
+
+
 .form-label {
-    font-weight: bold;
-    line-height: 14px;
+    font-size: 131%;
 }
 .ctrl-row {
-    margin: 0 0 15px;
+    margin: 0 0 5px;
+    box-sizing: border-box;
 }
 .ctrl-con label {
     display: block;
 }
 
 .ctrl-con label span {
-    vertical-align: middle;
 }
 
 .text-field {
-    font-size: 14px; 
-    padding: 3px;
+    font-size: 116%;
+    padding: 2px;
+    margin: 0px;
     box-sizing: border-box;
     border-radius: 2px;
-    background: #FFFFFF;
-    display: inline-block;
+    background: #FFF;
     border: 1px solid #dcdbe1;
-    min-width: 230px;
+    width: 100%;
+    height: 100%;
+    vertical-align: middle;
 }
 
-.text-field:hover, .ctrl-con:hover .multi-tagger .text-field {
-    border: 1px solid #94899e;
-    z-index: 900;
+.select-field {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    background: transparent url(${router.get_path('images', 'droparrow-def-21px.png')}) no-repeat scroll 100% 50%;
 }
-.text-field:focus, .ctrl-con:focus .multi-tagger input {
+
+.select-field:focus {
+    background: transparent url(${router.get_path('images', 'droparrow-active-21px.png')}) no-repeat scroll 100% 50%;
+}
+
+.select-wrapper {
+    border-radius: 2px;
+background: rgba(254,254,254,1);
+background: -moz-linear-gradient(top, rgba(254,254,254,1) 0%, rgba(237,238,246,1) 100%);
+background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(254,254,254,1)), color-stop(100%, rgba(237,238,246,1)));
+background: -webkit-linear-gradient(top, rgba(254,254,254,1) 0%, rgba(237,238,246,1) 100%);
+background: -o-linear-gradient(top, rgba(254,254,254,1) 0%, rgba(237,238,246,1) 100%);
+background: -ms-linear-gradient(top, rgba(254,254,254,1) 0%, rgba(237,238,246,1) 100%);
+background: linear-gradient(to bottom, rgba(254,254,254,1) 0%, rgba(237,238,246,1) 100%);
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fefefe', endColorstr='#edeef6', GradientType=0 );
+
+}
+
+.text-field:hover, .ctrl-con:hover .multi_-tagger .text-field:hover {
+    border: 1px solid #94899e;
+}
+.text-field:focus, .ctrl-con:focus .multi_-tagger .text-field:focus {
     border: 1px solid #25252b;
-    z-index: 1000;
 }
 .basic-form button[type=submit], .basic-form button[type=button], .link-button {
     font-family: inherit;
-    font-size: 13px;
     font-weight: bold;
     display: block;
     box-sizing: border-box;
@@ -146,6 +260,21 @@ body {
     width: 100%;
 }
 
+.empty-box {
+    box-sizing: border-box;
+    border-radius: 2px;
+    background: transparent url(${router.get_path('images', 'plus-21px.png')}) no-repeat 50% 50%;
+    border: 1px solid #D2D2D2;
+    width: 21px;
+    height: 100%;
+}
+.empty-box:active {
+    background: #EDEEF6 no-repeat;
+    background-position: 50% 52%;
+}
+.empty-box:hover {
+    border: 1px solid #94899e;
+}
 .button-enabled {
     color: #fff;
     background: #3A6EC2;
@@ -168,6 +297,11 @@ body {
     margin-top: 8px;
 }
 
+.basic-form {
+    font-size: 13px;
+    font-family: "Source Sans Pro", sans-serif;
+}
+
 .basic-form .pop-box {
     border: 1px solid #d2f2f2;
     border-radius: 3px;
@@ -177,25 +311,12 @@ body {
     position: relative;
 }
 
-.basic-form-inner {
-    padding: 5px;
-}
-
-.form-container {
-    padding: 13px 13px 26px 13px;
-}
-.basic-form-header {
-    background: transparent !important;
-    padding: 10px;
-}
-
 .basic-form-outer {
-    background: #F6FFFD;
     border-radius: 0 0 3px 3px;
 }
-.basic-form-header h3 {
+.modal-box  h3 {
     margin: 0;
-    padding: 0;
+    padding: 5px;
     color: #FFFFFF;
     text-shadow:1px 1px 0 #737878;
 }
@@ -211,24 +332,23 @@ body {
     resize: none;
 }
 </style>
+<!--!><div id="canvas" style="position:relative;width:100%;height:100%;">-->
 <metal:head use-macro="load: site_head.pt"/>
 <script src="${js_editor}"></script>
 <script src="${mootools}"></script>
-<div tal:condition="params['url'].get('c_req') is not None" class="box-style info-box warning">
+<div tal:condition="params['url'].get('c_req') is not None" class="modal-box info-box warning">
     <h3>Cookies Required for authentication.</h3>
     <p>Please enable cookies in your browser to continue.</p>
     <a class="link-button" style="width: 150px;" href="${path}">Try Again!</a>
 </div>
-<div tal:condition="params['url'].get('tout') is not None" class="box-style info-box warning">
+<div tal:condition="params['url'].get('tout') is not None" class="modal-box info-box warning">
     <h3>Form timeout</h3>
     <p>Please submit form within <span tal:content="params['url']['tout'][0]"></span> seconds</p>
     <a class="link-button" style="width: 150px;" href="${path}">Try Again!</a>
 </div>
-<div id="add_block" tal:condition="params['url'].get('c_req') is None and params['url'].get('tout') is None">
-<div class="basic-form box-style">
-    <div class="basic-form-header">
-        <h3 class="form-title" tal:content="form.title"></h3>
-    </div>
+<div id="add_block" class="static-block" tal:condition="params['url'].get('c_req') is None and params['url'].get('tout') is None">
+<div class="basic-form static-box">
+        <h2 class="form-title" tal:content="form.title"></h2>
     <div class="basic-form-outer" id="${form.id}_con" style="width:${form.width}"> 
     <div class="basic-form-inner">
         <div class="form-container">
@@ -242,14 +362,12 @@ body {
                <tal:repeat tal:repeat="item form.info"><span tal:replace="structure: item"/></tal:repeat>
                 <span class="ibox-16px close-16px close-info-16px closer"></span>
             </div>
-        <!--! Form override -->
-
 <form  id="${form.id}" name="${form.name}" method="${form.method}" action="${form.action}" tal:attributes="novalidate 'novalidate' if form.novalidate else None" enctype="${form.enctype}">
     <div id="form_inner">
         <div tal:define="field form.get_field('title')" class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
             <div class="ctrl-con">
                 <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
-                    <span tal:content="field.label"></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
+                    <span tal:content="field.label"></span><span style="float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
             <tal:render tal:content="structure: field.render()"/>
             <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
             </div>
@@ -257,11 +375,11 @@ body {
         <div tal:define="field form.get_field('tags')" class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
             <div class="ctrl-con">
                 <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
-                    <span style="padding-bottom:5px;" tal:content="field.label"></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
-                <div id="multi_tag" style="display:block;min-width:190px;margin-top:-1px;" class="multi-tagger">
+                    <span tal:content="field.label"></span><span style="float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
+                <div id="multi_tag" class="ctrl-group group-50" style="padding-right:50px;margin-bottom:0px;">
                     <tal:render tal:content="structure: field.render()"/>
-                    <span style="margin-left:5px;display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'plus-21px.png')});" class="empty-box add-tag" href="#"></span><span
-                     style="display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'minus-21px.png')});" class="empty-box remove-tag" href="#"></span>
+                    <span style="display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'plus-21px.png')});position:absolute;right:25px;top:0px;" class="empty-box add-tag" href="#"></span><span
+                     style="display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'minus-21px.png')});position:absolute;right:0px;top:0px;" class="empty-box remove-tag" href="#"></span>
                 </div>
             <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
             </div>
@@ -269,18 +387,21 @@ body {
         <div tal:define="field form.get_field('section')" class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
             <div class="ctrl-con">
                 <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
-                    <span style="padding-bottom:5px;" tal:content="field.label"></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
-                <div style="display:inline-block;min-width:190px;">
+                    <span tal:content="field.label"></span></label>
+                <!--!><span tal:condition="field.required and field.valid is False"><img src="${router.get_path('images', 'error-21px.png')}"/><span class="field-error" tal:content="field.invalid_message"></span></span></label>-->
+                <div class="ctrl-group group-50" style="padding-right:50px;">
+                    <div class="select-wrapper">
                    <tal:render tal:content="structure: field.render()"/>
-                   <span id="add_section" style="margin:5px;display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'plus-21px.png')});" class="empty-box" href="#"></span>
+                    </div>
+                   <span id="add_section" style="display:inline-block;vertical-align:middle;background-image:url(${router.get_path('images', 'plus-21px.png')});position:absolute;right:25px;top:0px;" class="empty-box" href="#"></span>
                 </div>
-            <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
+            <p class="field-note"><span tal:condition="field.note" tal:content="structure: field.note"><span tal:condition="field.required and field.valid is False"><span class="field-error" tal:content="field.invalid_message"></span></span></p>
             </div>
         </div>
         <div tal:define="field form.get_field('body')" class="ctrl-row" tal:attributes="class 'ctrl-row input-error' if field.valid is False else 'ctrl-row'; id field.name; style 'display:'+field.get_style('display')+';;' if hasattr(field, 'get_style') and field.get_style('display') else None"> 
             <div class="ctrl-con">
                 <label tal:condition="field.label" class="form-label" tal:attributes="for field.id if field.id else False">
-                    <span tal:content="field.label"></span><span style="color:#FF0000;float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
+                    <span tal:content="field.label"></span><span style="float:right;" tal:condition="field.required and field.valid is False" tal:content="field.invalid_message"></span></label>
             <tal:render tal:content="structure: field.render()"/>
             <p class="note" tal:condition="field.note"><span tal:content="structure: field.note"></span></p>
             </div>
@@ -354,8 +475,8 @@ function createOverlay(){
     overlay.style.width = '100%';
     overlay.style.height = '100%';
     overlay.style.position = 'fixed';
-    overlay.style.backgroundColor = '#FFF';
-    overlay.style.opacity = 0.4;
+    overlay.style.backgroundColor = '#000';
+    overlay.style.opacity = 0.5;
     overlay.style.zIndex = 999;
     overlay.style.display = "none";
     overlay.setProperty('id', 'overlay');
@@ -427,7 +548,9 @@ function renderForm(){
 
     function setupForm(p){
         var con = getContainer();
-        con.setPosition(p.getPosition());
+        var pos = p.getPosition();
+        pos.x = null;
+        con.setPosition(pos);
         if(con._init === false){
             btn = con.getElementById('section_button');
             btn.addEventListener('click', postForm.bind(con));
@@ -444,14 +567,15 @@ function getContainer(){
     if (e == null){
         e = document.createElement('div');
         e.style.zIndex = 1000;
-        e.setProperty('id', 'xhr_add_section');
-        e.style.position = 'absolute';
-        e.style.width = '50% auto';
-        e.style.display = "none"
+        e.setProperties({'id': 'xhr_add_section', 'class': 'modal-dialog'});
+        e.style.position = 'relative';
+        //e.style.width = popupWidth;
+        e.style.display = "none";
+        e.style.margin = "0 auto";
         e._init = false;
         e._invalid = false;
         e._waiting = false;
-        e.inject(document.getElementById('overlay'), 'before');
+        e.inject(document.getElementById('overlay'), 'after');
     }
     return e;
 }
@@ -471,10 +595,12 @@ function getForm(){
     r.send();
 }
 
+var popupWidth = '256px';
 (function(){
     createOverlay();
     getForm();
     var addSection = document.getElementById('add_section');
+    var canvas = document.body;
     addSection.addEventListener('click', renderForm.bind(addSection));
 })();
 
@@ -493,6 +619,7 @@ function getForm(){
 </div>
 </div>
 <metal:head use-macro="load: site_footer.pt"/>
+<!--!></div>-->
 </body>
 </metal:body>
 </metal:main>

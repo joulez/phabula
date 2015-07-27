@@ -23,7 +23,7 @@ from psyion.utils import SignedSerializer
 from reform import HTMLBasicForm
 
 from .resources import *
-from .database.backends import create_backend
+from .resources.backends import create_backend
 
 ROOT = '/'
 
@@ -72,12 +72,45 @@ def _static_directory_trees(app, router, base_dir, base_map, base_node, predicat
     js_node = app.get_node(router, js_map, 'javascript_libraries')
     
     mootools_node = app.get_node(router, js_map+'/mootools.js', 'mootools')
-    mappings.add(mootools_node, (Mootools, predicates))
+    mappings.add(mootools_node, (create_file_resource('mootools', 
+        'Mootools Library version 1.5.1', 
+        file='MooTools-Core-1.5.1.js',
+        path=os.path.join(os.path.dirname(os.path.abspath(__file__)),
+            'assets/javascript'),
+        media_type=media.types.application.javascript,
+        enable_hash=True,
+        enable_cache=True,
+        enable_alt=False,
+        alt='https://cdnjs.cloudflare.com/ajax/libs/mootools/1.5.1/mootools-core-full-compat.js'),
+        predicates))
+        
 
     images_node = app.get_node(router,
             base_map+'/imgs/:re:^.*(.png|.jpg|.gif)', 
             'images')
-    mappings.add(images_node, (ImageAssets, predicates))
+    mappings.add(images_node, (create_directory_resource('images', 
+        'Images', 
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+           'assets', 'art', 'images'),
+        pattern="^.*(.png|.jpg)",
+        enable_hash=True,
+        enable_alt=False,
+        enable_cache=True),
+        predicates))
+
+    css_node = app.get_node(router, base_map+'/css/:re:^.*.css',
+            'stylesheets')
+    mappings.add(app.get_node(router,
+        base_map+'/css/:re:^.*.css', 'stylesheets'),
+        (create_directory_resource('css', 'HTML Style Sheets',
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+            'assets', 'stylesheets'),
+        pattern='^.*.css',
+        enable_hash=True,
+        enable_alt=False,
+        enable_cache=True),
+        predicates))
+    
 
     ck_dir = os.path.join(js_dir, 'ckeditor')
 
@@ -87,6 +120,7 @@ def _static_directory_trees(app, router, base_dir, base_map, base_node, predicat
             enable_hash=True,
             enable_alt=False,
             alt='//cdn.ckeditor.com/4.4.7/standard')
+
 
 def _item_resource(app, router, base_path, predicates):
     pat = ':re:.(\d{0,10})$'

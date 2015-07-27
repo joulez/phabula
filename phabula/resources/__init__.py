@@ -37,8 +37,8 @@ from psyion.utils import logging
 
 log = logging.getLogger(__name__)
 
-from .database.backends import create_backend
-from .database import queries
+from .backends import create_backend
+from ..database import queries
 
 content_type = headers.content_type
 
@@ -196,8 +196,8 @@ def create_formbase(backend, serializer):
                     self.set_form_key(context['form'], keyvalue=keyvalue)
                     self.set_session_value(session, self.key_name, keyvalue)
 
-                if self.enable_timeout:
-                    self.set_form_timeout(context['form'])
+                #if self.enable_timeout:
+                #    self.set_form_timeout(context['form'])
 
                 return self.render(context, session)
     
@@ -210,6 +210,7 @@ def create_formbase(backend, serializer):
                 
                 params = context['params']
                 path = context['lookup']['path']
+                print('form data => %s'%(params.get('body')))
                 form.data = dict(params.get('body', {}))
 
                 if self.enable_key:
@@ -310,8 +311,9 @@ def additem(formbase, serializer):
         body = TextArea('body', required=True, id='body_field',
                 label='Content', cols=64, rows=10, css_class='text-field', 
                 wrap='hard', maxlength=4096)
-        option = SelectOption('select', 'select')
+        option = SelectOption('select','')
         section.add_option(option)
+        section.add_options(SelectOption('test', 'test'))
     
     
         submit = Button('submit', 'action', 'add', label='Create',
@@ -342,6 +344,8 @@ def additem(formbase, serializer):
             response.add_headers(hdrs)
     
         def GET(self, context, session):
+            mappings = session.registry.mappings
+
             router = context['router']
             url = router.get_url('psyion.org', 'LIST.ckeditor', 'ckeditor.js',
                     port=session.request.server_port)
@@ -349,6 +353,14 @@ def additem(formbase, serializer):
                     'ckeditor.js', cache=True)
             context['js_editor'] = path
             context['mootools'] = router.get_path('mootools')
+            router.get_node('stylesheets')
+            r, p = session.registry.mappings.get(router.get_node('stylesheets'))
+            context['stylesheets'] = []
+            stylesheets = context['stylesheets']
+            for f in r.contents.keys():
+                stylesheets.append(router.get_path('stylesheets', f))
+
+                
             return super(AddItem, self).GET(context, session)
     
     return AddItem
@@ -436,68 +448,46 @@ def signinform(formbase):
     return SigninForm
 
 
-
-class Mootools(metaclass=IOFileResource):
-    meta = {
-            'id': 'mootools',
-            'label': 'Mootooles Library version 1.5.1',
-            'file': 'MooTools-Core-1.5.1.js',
-            'path': os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                'assets/javascript'),
-            'media_type': media.types.application.javascript,
-            'enable_hash': True,
-            'enable_alt': False,
-            'enable_cache': True,
-            'alt':
-            'https://cdnjs.cloudflare.com/ajax/libs/mootools/1.5.1/mootools-core-full-compat.js'
-            }
+def create_file_resource(id, label, file, path, media_type=None,
+        enable_hash=True, enable_cache=False, enable_alt=False, alt=''):
+    """
+    File resource constructor (factory). Returns a mapped file resource class
+    instance.
+    """
+    class FileResource(metaclass=IOFileResource):
+        meta = dict(
+                id=id,
+                label=label,
+                file=file,
+                path=path,
+                media_type=media_type,
+                enable_hash=enable_hash,
+                enable_cache=enable_cache,
+                enable_alt=enable_alt,
+                alt=alt)
+    return FileResource
 
 def get_template(session, name):
     return session.registry.resources.get('templates').get(name)
 
-
-class ImageAssets(metaclass=DirectoryResource):
-    meta = dict(
-            id='images',
-            label='Image Assets',
-            dir=os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                'assets', 'art', 'images'),
-            pattern="^.*(.png|.jpg)",
-            enable_hash=True,
-            enable_alt=False,
-            enable_cache=True
-            )
-            
-
-def map_static_directory(app, base_path, dir, pattern):
-    level = 0
-    def walk(level=2):
-        pass
-
-    pass
-
-
-#@function_resource(media_type=text_html)
-#def root(context, session):
-#    pha_sess = session.get('pha_sess')
-#    sess_id = pha_sess.get('id')
-#    if sess_id is None:
-#        pha_sess['id'] = 0
-#        pha_sess['l_count'] = 0
-#        pha_sess.save()
-#    c = default_context.copy()
-#    c.update(context)
-#    tmpl = session.registry.resources.get('templates').get('root.pt')
-#    return [tmpl(c, session).encode()]
-#
-#@function_resource(media_type=text_html(charset='utf-8'))
-#def manager_home(context, session):
-#    pha_sess = session.get('pha_sess')
-#    sess_id = pha_sess.get('id')
-#    c = default_context.copy()
-#    c.update(context)
-#    tmpl = session.registry.resources.get('templates').get('manager_home.pt')
-#    return [tmpl(c, session).encode()]
+def create_directory_resource(id, label, dir, pattern='^.*',
+        enable_hash=True, enable_alt=False, enable_cache=False):
+    """
+    Directory Resource constructor (factory). Returns a mapped directory 
+    resource class instance.
+    """
+    class DirResource(metaclass=DirectoryResource):
+        meta = dict(
+                id=id,
+                label=label,
+                dir=dir,
+                pattern=pattern,
+                enable_hash=enable_hash,
+                enable_alt=enable_alt,
+                enable_cache=enable_cache
+                )
+    return DirResource
+                
 
 
 def _test_list(page_no, page_size=10):
