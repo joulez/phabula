@@ -158,7 +158,6 @@ def reg_list_items(app, router, base_path, backend, **config):
 
     app.registry.mappings.add(node, (item_resource, predicates))
 
-)
 
 def reg_add_item(app, router, base_path, formbase, serializer, **config):
     predicates = config.get('predicates')
